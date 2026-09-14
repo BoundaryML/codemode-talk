@@ -288,9 +288,6 @@ export const slides: SlideDef[] = [
     render: () => (
       <Slide kicker="The problem with tool calling (and MCP)">
         <h2>This gets expensive.</h2>
-        <p>
-          Every turn re-sends the whole conversation. Every tool result stays in it forever.
-        </p>
         <TokenBars variant="turns" />
         <Frag at={4}>
           <p className="lead" style={{ marginTop: 6 }}>
