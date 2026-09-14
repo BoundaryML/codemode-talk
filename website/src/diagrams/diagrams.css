@@ -157,3 +157,7 @@
 .dg-svg .box.inner { stroke: var(--fg-border); transition: stroke 150ms ease, fill 150ms ease; }
 .dg-svg .box.inner[data-on="true"] { stroke: var(--accent); fill: rgba(108,92,231,0.1); }
 [data-flow-state="code"] .dot { background: var(--accent); }
+[data-flow-state="ctx"] .dot { background: var(--fg-tertiary); }
+[data-flow-state="user"] .msg { background: var(--fg-secondary); }
+.llm-ring.sm { width: calc(var(--flow-u) * 84); height: calc(var(--flow-u) * 32); }
+.msg.sm { width: calc(var(--flow-u) * 8); height: calc(var(--flow-u) * 8); }

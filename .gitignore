@@ -3,3 +3,4 @@ dist/
 baml/sandbox/.run/
 .env
 .DS_Store
+.shots/

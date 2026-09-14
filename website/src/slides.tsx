@@ -4,8 +4,7 @@ import { Slide, Code } from "./ui";
 import { RoundTripsCompare } from "./diagrams/RoundTrips";
 import { ContextBloat } from "./diagrams/ContextBloat";
 import { TokenBars } from "./diagrams/TokenBars";
-import { AgentLoop } from "./diagrams/AgentLoop";
-import { AgentTool, AGENT_TOOL_TIMES } from "./diagrams/AgentTool";
+import { Orchestrated, AGENT_TIMES } from "./diagrams/Orchestrated";
 
 const CodemodeSlide = () => {
   const step = useStep();
@@ -206,17 +205,17 @@ const SearchDescribeSlide = () => {
 };
 
 const LOG: { role: "user" | "tool_call" | "tool_result" | "assistant"; text: string; at: number; t: number }[] = [
-  { role: "user", at: 0, t: AGENT_TOOL_TIMES.user,
+  { role: "user", at: 0, t: AGENT_TIMES.user,
     text: "File a Linear ticket for each p0 bug in boundaryml/baml, then tell #eng." },
-  { role: "tool_call", at: 1, t: AGENT_TOOL_TIMES.searchCall,
+  { role: "tool_call", at: 1, t: AGENT_TIMES.searchCall,
     text: 'web_search({ q: "boundaryml/baml open issues label:p0" })' },
-  { role: "tool_result", at: 2, t: AGENT_TOOL_TIMES.searchResult,
+  { role: "tool_result", at: 2, t: AGENT_TIMES.searchResult,
     text: "3 open issues: #812 Parser panics, #815 Streaming drops last token, #819 …" },
-  { role: "tool_call", at: 3, t: AGENT_TOOL_TIMES.codemodeCall,
+  { role: "tool_call", at: 3, t: AGENT_TIMES.codemodeCall,
     text: 'codemode({ task: "for issues 812, 815, 819: create a Linear ticket each, then post a one-line summary to #eng" })' },
-  { role: "tool_result", at: 4, t: AGENT_TOOL_TIMES.codemodeResult,
+  { role: "tool_result", at: 4, t: AGENT_TIMES.codemodeResult,
     text: '{ tickets: ["ENG-1001", "ENG-1002", "ENG-1003"], posted: true }' },
-  { role: "assistant", at: 5, t: AGENT_TOOL_TIMES.answer,
+  { role: "assistant", at: 5, t: AGENT_TIMES.answer,
     text: "Filed ENG-1001, ENG-1002 and ENG-1003 and posted the summary to #eng." },
 ];
 
@@ -226,7 +225,7 @@ const AgentToolSlide = () => {
   const shown = LOG.filter((m) => m.at <= step);
   const startAt = showCode ? 0 : (LOG.find((m) => m.at === step)?.t ?? 0);
   // play just this message's segment, then freeze until the next press
-  const endAt = showCode ? undefined : (LOG.find((m) => m.at === step + 1)?.t ?? AGENT_TOOL_TIMES.end);
+  const endAt = showCode ? undefined : (LOG.find((m) => m.at === step + 1)?.t ?? AGENT_TIMES.end);
   return (
     <Slide kicker="Let's build codemode, step by step">
       <h2>Make it a tool. Give it to an agent.</h2>
@@ -268,7 +267,7 @@ for (let step = 0; step < MAX_STEPS; step++) {
           )}
         </div>
         <div className="col">
-          <AgentTool key={`${step}`} startAt={startAt} endAt={endAt} />
+          <Orchestrated mode="agent" key={`${step}`} startAt={startAt} endAt={endAt} />
         </div>
       </div>
     </Slide>
@@ -551,7 +550,7 @@ return result; // 🤑
             </Frag>
           </div>
           <div className="col">
-            <AgentLoop />
+            <Orchestrated mode="workflow" />
           </div>
         </div>
       </Slide>
