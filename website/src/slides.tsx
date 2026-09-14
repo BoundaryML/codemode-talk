@@ -212,6 +212,16 @@ const StepsGrow = () => {
   );
 };
 
+const SearchDescribeSlide = () => {
+  const step = useStep();
+  return (
+    <Slide kicker="Making the LLM generate code, efficiently">
+      <h2>Let's give the LLM <em>search()</em> and <em>describe()</em> tools</h2>
+      <ContextBloat mode={step === 0 ? "dump" : "search"} />
+    </Slide>
+  );
+};
+
 export const slides: SlideDef[] = [
   // 1 ── Title
   {
@@ -485,12 +495,8 @@ return result; // 🤑
 
   // 12 ── Search + describe (animated)
   {
-    render: () => (
-      <Slide kicker="Making the LLM generate code, efficiently">
-        <h2>Let's give the LLM <em>search()</em> and <em>describe()</em> tools</h2>
-        <ContextBloat />
-      </Slide>
-    ),
+    steps: 1,
+    render: () => <SearchDescribeSlide />,
   },
 
   // The agent loop, as it really is now

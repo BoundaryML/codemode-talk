@@ -122,41 +122,50 @@ const Frame = ({ mode }: { mode: "dump" | "search" }) => (
   </svg>
 );
 
-export const ContextBloat = () => (
-  <div>
-    <Flow.Root
-      duration={DURATION}
-      posterTime={4800}
-      aria-label="Dumping every API doc into the prompt versus search and describe"
-      className="dg-grid2"
-      pauseWhenOffscreen={false}
-    >
-      <Flow.Stage width={W} height={H}>
-        <Frame mode="dump" />
-        <Flow.Token track={dumpBoxTrack}><div className="prompt-fill" /></Flow.Token>
-        {dumpTracks.map((d) => (
-          <Flow.Token key={d.track.id} track={d.track}><div className="chip doc">{d.name}</div></Flow.Token>
-        ))}
-      </Flow.Stage>
-      <Flow.Stage width={W} height={H}>
-        <Frame mode="search" />
-        <Flow.Token track={searchBoxTrack}><div className="prompt-fill" /></Flow.Token>
-        {searchTracks.map((t) => (
-          <Flow.Token key={t.id} track={t}>
-            {t.id.startsWith("q") ? (
-              <div className="dot" />
-            ) : t.id === "types" ? (
-              <div className="chip code wide">types.d.ts</div>
-            ) : (
-              <div className="chip doc wide">{["github.createIssue", "linear.addLabel", "slack.post"][Number(t.id.slice(-1))]}</div>
-            )}
-          </Flow.Token>
-        ))}
-      </Flow.Stage>
-    </Flow.Root>
-    <div className="dg-caption">
-      <span><b>dump everything</b> · prompt overflows</span>
-      <span><b>search + describe</b> · pull in only what you need</span>
+export const ContextBloat = ({ mode }: { mode: "dump" | "search" }) => (
+  <div className="cb">
+    <div className="cb-tabs">
+      <span className="cb-tab" data-on={mode === "dump"}><b>before</b> · inline all 1,640 tools</span>
+      <span className="cb-arrow">→</span>
+      <span className="cb-tab" data-on={mode === "search"}><b>after</b> · give it search() + describe()</span>
+    </div>
+    <div key={mode} className="cb-stage">
+      <Flow.Root
+        duration={DURATION}
+        posterTime={4800}
+        aria-label={mode === "dump" ? "Dumping every API doc into the prompt" : "Search and describe pull in only what is needed"}
+        className="dg-solo"
+        pauseWhenOffscreen={false}
+      >
+        {mode === "dump" ? (
+          <Flow.Stage width={W} height={H}>
+            <Frame mode="dump" />
+            <Flow.Token track={dumpBoxTrack}><div className="prompt-fill" /></Flow.Token>
+            {dumpTracks.map((d) => (
+              <Flow.Token key={d.track.id} track={d.track}><div className="chip doc">{d.name}</div></Flow.Token>
+            ))}
+          </Flow.Stage>
+        ) : (
+          <Flow.Stage width={W} height={H}>
+            <Frame mode="search" />
+            <Flow.Token track={searchBoxTrack}><div className="prompt-fill" /></Flow.Token>
+            {searchTracks.map((t) => (
+              <Flow.Token key={t.id} track={t}>
+                {t.id.startsWith("q") ? (
+                  <div className="dot" />
+                ) : t.id === "types" ? (
+                  <div className="chip code wide">types.d.ts</div>
+                ) : (
+                  <div className="chip doc wide">{["github.createIssue", "linear.addLabel", "slack.post"][Number(t.id.slice(-1))]}</div>
+                )}
+              </Flow.Token>
+            ))}
+          </Flow.Stage>
+        )}
+      </Flow.Root>
+    </div>
+    <div className="dg-caption" style={{ justifyContent: "center", marginTop: 6 }}>
+      {mode === "dump" ? <span>the prompt overflows before the agent writes a line</span> : <span>the prompt only holds what this task needs</span>}
     </div>
   </div>
 );
