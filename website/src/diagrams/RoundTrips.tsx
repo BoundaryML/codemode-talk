@@ -210,6 +210,7 @@ export const RoundTripsCompare = ({
     <Flow.Root
       duration={DURATION}
       posterTime={posterTime}
+      resetTime={paused ? posterTime : 0}
       paused={paused}
       controls={!paused}
       aria-label="Tool calling versus codemode round trips"
