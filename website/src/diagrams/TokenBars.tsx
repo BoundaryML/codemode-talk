@@ -49,12 +49,25 @@ const KIND_LABEL: Record<Seg["kind"], string> = {
   answer: "final answer",
 };
 
-export const TokenBars = () => {
+/** Tool calling, turn by turn: the whole context is re-sent and grows each time. */
+const TURNS: { name: string; at: number; total: string; segs: Seg[] }[] = [
+  { name: "turn 1", at: 0, total: "~100k", segs: [
+    { w: 100, kind: "docs", label: "system prompt + 1,640 tool schemas" }, { w: 6, kind: "call", label: "A" } ] },
+  { name: "turn 2", at: 1, total: "~145k", segs: [
+    { w: 100, kind: "docs", label: "same prompt again" }, { w: 6, kind: "call" }, { w: 38, kind: "result", label: "result A" }, { w: 6, kind: "call", label: "B" } ] },
+  { name: "turn 3", at: 2, total: "~190k", segs: [
+    { w: 100, kind: "docs", label: "same prompt again" }, { w: 6, kind: "call" }, { w: 38, kind: "result", label: "result A" }, { w: 6, kind: "call" }, { w: 38, kind: "result", label: "result B" }, { w: 6, kind: "call", label: "C" } ] },
+  { name: "turn 4", at: 3, total: "~235k", segs: [
+    { w: 100, kind: "docs", label: "same prompt again" }, { w: 6, kind: "call" }, { w: 38, kind: "result", label: "result A" }, { w: 6, kind: "call" }, { w: 38, kind: "result", label: "result B" }, { w: 6, kind: "call" }, { w: 38, kind: "result", label: "result C" }, { w: 6, kind: "answer" } ] },
+];
+
+export const TokenBars = ({ variant = "strategies" }: { variant?: "strategies" | "turns" }) => {
   const step = useStep();
-  const max = Math.max(...ROWS.map((r) => r.segs.reduce((n, s) => n + s.w, 0)));
+  const rows = variant === "turns" ? TURNS : ROWS;
+  const max = Math.max(...rows.map((r) => r.segs.reduce((n, s) => n + s.w, 0)));
   return (
     <div className="tb">
-      {ROWS.map((r) => {
+      {rows.map((r) => {
         const on = step >= r.at;
         return (
           <div key={r.name} className="tb-row" data-hidden={!on}>
@@ -63,7 +76,7 @@ export const TokenBars = () => {
               {r.segs.map((s, i) => (
                 <div
                   key={i}
-                  className={`tb-seg tb-${s.kind} ${step >= 2 && s.kind === "docs" ? "pulse" : ""}`}
+                  className={`tb-seg tb-${s.kind} ${variant === "strategies" && step >= 2 && s.kind === "docs" ? "pulse" : ""}`}
                   style={{ width: `${(s.w / max) * 100}%` }}
                   title={KIND_LABEL[s.kind]}
                 >

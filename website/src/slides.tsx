@@ -5,6 +5,7 @@ import { RoundTripsCompare } from "./diagrams/RoundTrips";
 import { ContextBloat } from "./diagrams/ContextBloat";
 import { WorkflowBuild } from "./diagrams/WorkflowBuild";
 import { TokenBars } from "./diagrams/TokenBars";
+import { AgentLoop } from "./diagrams/AgentLoop";
 
 const Steps = ({
   items,
@@ -138,6 +139,56 @@ const CodeSteps = ({
   );
 };
 
+const GROWN: { text: React.ReactNode; orig?: boolean; at: number }[] = [
+  { text: "Search for the tools you need", at: 1 },
+  { text: "Describe them (get the types)", at: 2 },
+  { text: <>Make an LLM generate code</>, orig: true, at: 0 },
+  { text: "Type-check / lint the string it gave you", at: 3 },
+  { text: "Put the APIs in scope, in a sandbox", at: 4 },
+  { text: "Gate the dangerous calls behind approval", at: 5 },
+  { text: <>Run it</>, orig: true, at: 0 },
+  { text: "Log every call. The script is your trace.", at: 6 },
+  { text: "Feed only the result back", at: 6 },
+  { text: <>Save $$$$</>, orig: true, at: 0 },
+];
+
+const StepsGrow = () => {
+  const step = useStep();
+  const shown = GROWN.filter((g) => step >= g.at);
+  return (
+    <Slide kicker="Let's build codemode, step by step">
+      <h2>Remember when this was three steps?</h2>
+      <div className="row grow">
+        <div className="col" style={{ flex: "0 0 480px" }}>
+          <div className="code-title">what we said</div>
+          <ol className="sg" data-struck={step >= 7}>
+            <li>Make an LLM generate code</li>
+            <li>Run it</li>
+            <li>Save $$$$</li>
+          </ol>
+          <Frag at={7} style={{ marginTop: 18 }}>
+            <p>
+              Codemode isn't a trick. It's an <strong>agent architecture</strong>. Every
+              step you skip comes back as a bug.
+            </p>
+          </Frag>
+        </div>
+        <div className="col">
+          <div className="code-title">what it actually takes</div>
+          <ol className="sg grown">
+            {shown.map((g, i) => (
+              <li key={String(g.text) + i} className={g.orig ? "orig" : "added"} data-new={!g.orig && g.at === step}>
+                <span>{g.text}</span>
+                {!g.orig ? <span className="tag violet">added</span> : null}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </Slide>
+  );
+};
+
 export const slides: SlideDef[] = [
   // 1 ── Title
   {
@@ -207,16 +258,19 @@ export const slides: SlideDef[] = [
     ),
   },
 
-  // 4 ── Expensive
+  // 4 ── Expensive: the context is re-sent and grows every turn
   {
-    steps: 1,
+    steps: 4,
     render: () => (
-      <Slide className="center">
+      <Slide kicker="The problem with tool calling (and MCP)">
         <h2>This gets expensive.</h2>
-        <Frag at={1}>
-          <p className="lead" style={{ maxWidth: 1100 }}>
-            Imagine you had to report <em>every keystroke</em> you wanted to make to
-            your manager, and wait for approval before the next one.
+        <p>
+          Every turn re-sends the whole conversation. Every tool result stays in it forever.
+        </p>
+        <TokenBars variant="turns" />
+        <Frag at={4}>
+          <p className="lead" style={{ marginTop: 6 }}>
+            Imagine reporting <em>every keystroke</em> to your manager, and waiting for approval before the next one.
           </p>
         </Frag>
       </Slide>
@@ -424,10 +478,45 @@ return result; // 🤑
   {
     render: () => (
       <Slide kicker="Making the LLM generate code, efficiently">
-        <h2>Don't dump the docs. Give the agent <em>search()</em> and <em>describe()</em>.</h2>
+        <h2>Let's give the LLM <em>search()</em> and <em>describe()</em> tools</h2>
         <ContextBloat />
       </Slide>
     ),
+  },
+
+  // The agent loop, as it really is now
+  {
+    steps: 2,
+    render: () => (
+      <Slide kicker="Making the LLM generate code, efficiently">
+        <div className="row grow">
+          <div className="col" style={{ flex: "0 0 560px" }}>
+            <h2>Wait. This is a whole agent now.</h2>
+            <p>
+              The LLM has to pick a query, read search results, pick tools, read
+              their types, <em>then</em> write the script.
+            </p>
+            <Frag at={1}>
+              <p>Every one of those is a round trip. The context still grows, just slowly.</p>
+            </Frag>
+            <Frag at={2}>
+              <div className="card accent">
+                <p>Only the last hop is codemode. The rest is plain old tool calling that gets you there.</p>
+              </div>
+            </Frag>
+          </div>
+          <div className="col">
+            <AgentLoop />
+          </div>
+        </div>
+      </Slide>
+    ),
+  },
+
+  // Callback: remember when it was three steps?
+  {
+    steps: 7,
+    render: () => <StepsGrow />,
   },
 
   // 13 ── The 3 tools
