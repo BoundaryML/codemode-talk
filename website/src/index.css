@@ -322,3 +322,10 @@ code, pre, kbd { font-family: var(--font-mono); }
 .cs[data-dense="true"] .cs-title { font-size: 22px; }
 .cs[data-dense="true"] .cs-sub { font-size: 17px; }
 .cs[data-dense="true"] .code { padding: 8px 16px; font-size: 16.5px; line-height: 1.45; }
+
+.footnote {
+  position: absolute; left: 120px; right: 120px; bottom: 64px;
+  font-family: var(--font-mono); font-size: 14px; color: var(--fg-tertiary);
+}
+.footnote a { color: var(--fg-tertiary); }
+sup { font-size: 0.6em; color: var(--accent); }

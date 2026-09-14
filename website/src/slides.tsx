@@ -339,8 +339,11 @@ export const slides: SlideDef[] = [
               <div className="stat"><span className="n" style={{ fontSize: 72, color: "var(--accent)" }}>24%</span><span className="l">fewer input tokens</span></div>
               <div className="stat"><span className="n" style={{ fontSize: 72, color: "var(--accent)" }}>+11%</span><span className="l">accuracy</span></div>
             </div>
-            <p className="small muted">Programmatic tool calling on top of basic search tools, vs. plain tool calling. From "Improved web search with dynamic filtering."</p>
+            <p className="small muted">Programmatic tool calling on top of basic search tools, vs. plain tool calling.<sup>[1]</sup></p>
           </Frag>
+        </div>
+        <div className="footnote">
+          [1] <a href="https://claude.com/blog/improved-web-search-with-dynamic-filtering">claude.com/blog/improved-web-search-with-dynamic-filtering</a>
         </div>
       </Slide>
     ),
