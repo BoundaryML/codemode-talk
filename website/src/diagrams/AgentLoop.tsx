@@ -14,7 +14,7 @@ const LLM = { x: 62, y: 100 };
 const TOOLS = [
   { x: 210, y: 40, name: "search()", w: 70 },
   { x: 210, y: 100, name: "describe()", w: 70 },
-  { x: 210, y: 160, name: "run()", w: 70 },
+  { x: 210, y: 160, name: "run(myScript)", w: 84 },
 ];
 const SUB = [
   { x: 288, y: 136, name: "toolA()" },
@@ -151,7 +151,7 @@ export const AgentLoop = () => (
         {tracks.map((tk) => (
           <Flow.Token key={tk.id} track={tk}>
             {tk.id === "al-script" ? (
-              <div className="chip code">script.ts</div>
+              <div className="chip code">myScript</div>
             ) : tk.id === "al-result" ? (
               <div className="chip result">result</div>
             ) : (

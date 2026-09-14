@@ -170,8 +170,7 @@ const GROWN: { text: React.ReactNode; orig?: boolean; at: number }[] = [
   { text: "Put the APIs in scope, in a sandbox", at: 4 },
   { text: "Gate the dangerous calls behind approval", at: 5 },
   { text: <>Run it</>, orig: true, at: 0 },
-  { text: "Log every call. The script is your trace.", at: 6 },
-  { text: "Feed only the result back", at: 6 },
+  { text: "Log calls, generate an audit trail", at: 6 },
   { text: <>Save $$$$</>, orig: true, at: 0 },
 ];
 
