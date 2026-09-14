@@ -255,11 +255,11 @@ code, pre, kbd { font-family: var(--font-mono); }
 }
 .ap-sec {
   display: grid; grid-template-columns: 1fr 260px; align-items: start; gap: 16px;
-  padding: 3px 22px;
+  padding: 2px 22px;
   border-left: 4px solid transparent;
   transition: background 300ms ease, border-color 300ms ease, opacity 300ms ease;
 }
-.ap-pre { margin: 0; font-size: 14.5px; line-height: 1.4; color: var(--fg-secondary); white-space: pre; overflow: hidden; }
+.ap-pre { margin: 0; font-size: 13.5px; line-height: 1.32; color: var(--fg-secondary); white-space: pre; overflow: hidden; }
 .ap-note { display: flex; justify-content: flex-end; padding-top: 2px; opacity: 0; transform: translateX(6px); transition: opacity 300ms ease, transform 300ms ease; }
 .ap-sec.on .ap-note { opacity: 1; transform: none; }
 .ap-sec.on[data-tone="bad"] { background: rgba(255, 107, 107, 0.07); border-left-color: var(--accent-1); }
@@ -329,3 +329,5 @@ code, pre, kbd { font-family: var(--font-mono); }
 }
 .footnote a { color: var(--fg-tertiary); }
 sup { font-size: 0.6em; color: var(--accent); }
+.ap-sig .ap-pre { color: var(--fg); }
+.ap-sec:not(.ap-sig) .ap-pre { padding-left: 18px; }

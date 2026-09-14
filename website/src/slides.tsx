@@ -111,8 +111,11 @@ const AnnotatedPrompt = () => {
   return (
     <div className="ap">
       <div className="ap-doc">
-        <div className="code-title">prompt (string) · ~278,800 tokens</div>
+        <div className="code-title">baml_src/codemode.baml · ~278,800 tokens</div>
         <div className="ap-body">
+          <div className="ap-sec ap-sig">
+            <pre className="ap-pre">{'function GenerateCode() -> string {\n  client: "anthropic/claude-sonnet-5"\n  prompt: `'}</pre>
+          </div>
           {PROMPT_SECTIONS.map((sec, i) => {
             const on = step >= (sec.at ?? 0);
             return (
@@ -122,10 +125,13 @@ const AnnotatedPrompt = () => {
               </div>
             );
           })}
+          <div className="ap-sec ap-sig">
+            <pre className="ap-pre">{'  `\n}'}</pre>
+          </div>
         </div>
       </div>
       <Frag at={4} className="ap-foot">
-        <p><strong>Three integrations in, and we're already at 1,300+ function signatures.</strong> The agent reads all of it on every turn, before it writes a single line.</p>
+        <p><strong>Context still gets bloated with 1000s of APIs.</strong></p>
       </Frag>
     </div>
   );
@@ -462,7 +468,7 @@ return result; // 🤑
     steps: 4,
     render: () => (
       <Slide kicker="Let's build codemode, step by step">
-        <h2>What the LLM actually sees</h2>
+        <h2>The LLM prompt for generating code</h2>
         <AnnotatedPrompt />
       </Slide>
     ),
