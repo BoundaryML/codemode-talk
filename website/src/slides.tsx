@@ -474,30 +474,13 @@ return result; // 🤑
     ),
   },
 
-  // 11 ── Problem: the front of the prompt is still huge
+  // 11 ── Problem: API definitions are still expensive
   {
     steps: 3,
     render: () => (
       <Slide kicker="Problem">
-        <h2>We saved the round trips. We did not save the prompt.</h2>
+        <h2>API definitions are still expensive</h2>
         <TokenBars />
-        <div className="row" style={{ marginTop: 6 }}>
-          <Frag at={1}>
-            <div className="card good">
-              <p>The intermediate results are gone. The script does that work now.</p>
-            </div>
-          </Frag>
-          <Frag at={2}>
-            <div className="card bad">
-              <p>But every API definition is still inlined at the top, on <strong>every</strong> turn. That's most of the bill.</p>
-            </div>
-          </Frag>
-          <Frag at={3}>
-            <div className="card accent">
-              <p>Fix the front of the prompt too, and codemode gets cheap.</p>
-            </div>
-          </Frag>
-        </div>
       </Slide>
     ),
   },
