@@ -113,7 +113,7 @@ const buildWorkflow = (): Build => {
   const think: FlowKeyframe[] = [];
   const times: Record<string, number> = {};
   let msg = 0;
-  const DURATION = 12500;
+  const DURATION = 14000;
   const ctx = (t: number, state: string) => {
     const x = CTX.x + msg * CTX.gap;
     msgs.push(defineTrack(`wf-msg-${msg}`, [
@@ -142,7 +142,9 @@ const buildWorkflow = (): Build => {
   const RUN: P = { x: 232, y: 160 };
   const SUB = [{ x: 296, y: 140 }, { x: 296, y: 160 }, { x: 296, y: 180 }];
 
-  let t = 300;
+  tracks.push(hop("wf-task", 100, YOU, PORT_LEFT, "user", 600, true));
+  ctx(650, "user");
+  let t = 1000;
   t = llmTurn("wf-plan", t, "answer");        // PlanSearch → queries
   t = tool("wf-search", t, SEARCH);            // search()
   t = llmTurn("wf-pick", t, "answer");        // pick the tools
@@ -158,7 +160,8 @@ const buildWorkflow = (): Build => {
   const tr = t + 700 + SUB.length * 300 + 100;
   tracks.push(hop("wf-run-back", tr, { x: RUN.x - 38, y: RUN.y }, PORT_RIGHT(RUN.y), "result", 600, true));
   ctx(tr + 550, "result");
-  times.end = tr + 800;
+  tracks.push(hop("wf-answer", tr + 900, PORT_LEFT, YOU, "answer", 600, true));
+  times.end = tr + 1700;
   think.push({ t: DURATION, ...LLM, state: "idle" });
   return { tracks, msgs, think: [{ t: 0, ...LLM, state: "idle" }, ...think], stepTimes: [], duration: DURATION, times };
 };
@@ -192,11 +195,9 @@ const Boxes = ({ mode }: { mode: "agent" | "workflow" }) => {
       {tools.map((tl) => (
         <path key={tl.name} className="wire" d={`M ${BOX.x + BOX.w} ${tl.y} L ${tl.x - 38} ${tl.y}`} />
       ))}
+      <path className="wire" d={`M ${YOU.x + 18} ${YOU.y} L ${BOX.x} ${PORT_LEFT.y}`} />
       {mode === "agent" ? (
-        <>
-          <path className="wire" d={`M ${BOX.x + BOX.w} 150 L 190 150`} />
-          <path className="wire" d={`M ${YOU.x + 18} ${YOU.y} L ${BOX.x} ${PORT_LEFT.y}`} />
-        </>
+        <path className="wire" d={`M ${BOX.x + BOX.w} 150 L 190 150`} />
       ) : (
         [140, 160, 180].map((y) => <path key={y} className="wire" d={`M 270 160 L 282 ${y}`} />)
       )}
@@ -214,12 +215,8 @@ const Boxes = ({ mode }: { mode: "agent" | "workflow" }) => {
       <text className="label" x={CTX.x - 2} y={CTX.y - 11}>context</text>
       <rect className="box ctx" x={CTX.x - 6} y={CTX.y - 7} width={BOX.w - 8} height={14} rx={3} />
       {/* you */}
-      {mode === "agent" ? (
-        <>
-          <rect className="box" x={YOU.x - 18} y={YOU.y - 14} width={36} height={28} rx={6} />
-          <text className="title" x={YOU.x} y={YOU.y + 3} textAnchor="middle">you</text>
-        </>
-      ) : null}
+      <rect className="box" x={YOU.x - 18} y={YOU.y - 14} width={36} height={28} rx={6} />
+      <text className="title" x={YOU.x} y={YOU.y + 3} textAnchor="middle">you</text>
       {/* tools */}
       {tools.map((tl) => (
         <g key={tl.name}>

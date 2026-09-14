@@ -536,9 +536,15 @@ return result; // 🤑
         <div className="row grow">
           <div className="col" style={{ flex: "0 0 560px" }}>
             <h2>Wait. This is a whole workflow now.</h2>
+            <div className="log" style={{ marginBottom: 6 }}>
+              <div className="log-msg" data-role="user">
+                <span className="log-role">user</span>
+                <span className="log-text">Make a workflow that files a Linear ticket for each p0 bug in boundaryml/baml, then tells #eng.</span>
+              </div>
+            </div>
             <p>
-              The LLM has to pick a query, read search results, pick tools, read
-              their types, <em>then</em> write the script.
+              To even <em>write</em> the script, the LLM has to pick a query, read the
+              search results, pick tools, and read their types.
             </p>
             <Frag at={1}>
               <p>Every one of those is a round trip. The context still grows, just slowly.</p>
