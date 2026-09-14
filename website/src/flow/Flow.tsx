@@ -44,6 +44,8 @@ interface RootProps {
    * the frame. Default true; hidden automatically under reduced motion.
    */
   controls?: boolean;
+  /** Where reset() rewinds to (default 0). Lets a diagram start mid-loop. */
+  resetTime?: number;
   className?: string;
   style?: CSSProperties;
   "aria-label"?: string;
@@ -57,6 +59,7 @@ const Root = ({
   pauseWhenHidden = true,
   pauseWhenOffscreen = true,
   controls = true,
+  resetTime = 0,
   className,
   style,
   "aria-label": ariaLabel,
@@ -196,10 +199,12 @@ const Root = ({
    */
   const resetCountRef = useRef(0);
   const resets = useCallback(() => resetCountRef.current, []);
+  const resetTimeRef = useRef(resetTime);
+  resetTimeRef.current = resetTime;
 
   const reset = useCallback(() => {
     resetCountRef.current += 1;
-    timeRef.current = isStaticRef.current ? posterTimeRef.current : 0;
+    timeRef.current = isStaticRef.current ? posterTimeRef.current : resetTimeRef.current;
     for (const fn of subscribersRef.current) fn(timeRef.current);
   }, []);
 

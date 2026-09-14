@@ -6,7 +6,7 @@ import { ContextBloat } from "./diagrams/ContextBloat";
 import { WorkflowBuild } from "./diagrams/WorkflowBuild";
 import { TokenBars } from "./diagrams/TokenBars";
 import { AgentLoop } from "./diagrams/AgentLoop";
-import { AgentTool } from "./diagrams/AgentTool";
+import { AgentTool, AGENT_TOOL_TIMES } from "./diagrams/AgentTool";
 
 const Steps = ({
   items,
@@ -234,6 +234,70 @@ const SearchDescribeSlide = () => {
     <Slide kicker="Making the LLM generate code, efficiently">
       <h2>Let's give the LLM <em>search()</em> and <em>describe()</em> tools</h2>
       <ContextBloat mode={step === 0 ? "dump" : "search"} />
+    </Slide>
+  );
+};
+
+const LOG: { role: "user" | "tool_call" | "tool_result" | "assistant"; text: string; at: number; t: number }[] = [
+  { role: "user", at: 0, t: AGENT_TOOL_TIMES.user,
+    text: "File a Linear ticket for each p0 bug in boundaryml/baml, then tell #eng." },
+  { role: "tool_call", at: 1, t: AGENT_TOOL_TIMES.searchCall,
+    text: 'web_search({ q: "boundaryml/baml open issues label:p0" })' },
+  { role: "tool_result", at: 2, t: AGENT_TOOL_TIMES.searchResult,
+    text: "3 open issues: #812 Parser panics, #815 Streaming drops last token, #819 …" },
+  { role: "tool_call", at: 3, t: AGENT_TOOL_TIMES.codemodeCall,
+    text: 'codemode({ task: "for issues 812, 815, 819: create a Linear ticket each, then post a one-line summary to #eng" })' },
+  { role: "tool_result", at: 4, t: AGENT_TOOL_TIMES.codemodeResult,
+    text: '{ tickets: ["ENG-1001", "ENG-1002", "ENG-1003"], posted: true }' },
+  { role: "assistant", at: 5, t: AGENT_TOOL_TIMES.answer,
+    text: "Filed ENG-1001, ENG-1002 and ENG-1003 and posted the summary to #eng." },
+];
+
+const AgentToolSlide = () => {
+  const step = useStep();
+  const showCode = step >= 6;
+  const shown = LOG.filter((m) => m.at <= step);
+  const startAt = showCode ? 0 : (LOG.find((m) => m.at === step)?.t ?? 0);
+  return (
+    <Slide kicker="Let's build codemode, step by step">
+      <h2>Make it a tool. Give it to an agent.</h2>
+      <div className="row grow">
+        <div className="col" style={{ flex: "0 0 640px" }}>
+          {showCode ? (
+            <>
+              <Code title="agent.ts" small>{`
+const tools = { web_search, read_file, codemode };
+
+for (let step = 0; step < MAX_STEPS; step++) {
+  const turn = await llm(messages, tools);
+  if (!turn.toolCall) return turn.text;
+  messages.push(await run(turn.toolCall));
+}
+`}</Code>
+              <p className="small muted" style={{ marginTop: 10 }}>
+                codemode(task) is just another tool. The search → describe → write → check → run
+                pipeline is folded inside it.
+              </p>
+            </>
+          ) : (
+            <div className="log">
+              <div className="log-head">
+                <span>context window</span>
+                <span>{shown.length} message{shown.length === 1 ? "" : "s"}</span>
+              </div>
+              {shown.map((m, i) => (
+                <div key={i} className="log-msg" data-role={m.role} data-new={m.at === step}>
+                  <span className="log-role">{m.role}</span>
+                  <span className="log-text">{m.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="col">
+          <AgentTool key={startAt} startAt={startAt} />
+        </div>
+      </div>
     </Slide>
   );
 };
@@ -582,33 +646,10 @@ return result;
     ),
   },
 
-  // Wrap it as a tool inside an agent
+  // Wrap it as a tool inside an agent: the context window, message by message
   {
-    render: () => (
-      <Slide kicker="Let's build codemode, step by step">
-        <h2>Make it a tool. Give it to an agent.</h2>
-        <div className="row grow">
-          <div className="col" style={{ flex: "0 0 640px" }}>
-            <Code title="agent.ts" small>{`
-const tools = { web_search, read_file, codemode };
-
-for (let step = 0; step < MAX_STEPS; step++) {
-  const turn = await llm(messages, tools);
-  if (!turn.toolCall) return turn.text;
-  messages.push(await run(turn.toolCall));
-}
-`}</Code>
-            <p className="small muted" style={{ marginTop: 10 }}>
-              codemode(task) is just another tool. The search → describe → write → check → run
-              pipeline is folded inside it.
-            </p>
-          </div>
-          <div className="col">
-            <AgentTool />
-          </div>
-        </div>
-      </Slide>
-    ),
+    steps: 6,
+    render: () => <AgentToolSlide />,
   },
 
   // Punchline

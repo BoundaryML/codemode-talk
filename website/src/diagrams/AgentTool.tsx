@@ -103,7 +103,17 @@ ctxMsg(TC + 100, "call");
 }
 think.push({ t: DURATION, ...LLM, state: "idle" });
 const thinkTrack = defineTrack("at-think", think);
-const STEP_TIMES = [300, TC, TC + 1150 + (INNER.length - 1) * 420 + 300 + 150 + 1500];
+const T_RESULT = TC + 1150 + (INNER.length - 1) * 420 + 300 + 150;
+const STEP_TIMES = [300, TC, T_RESULT + 1500];
+/** Loop times matching each message in the context-window log. */
+export const AGENT_TOOL_TIMES = {
+  user: 0,
+  searchCall: 300,
+  searchResult: 1300,
+  codemodeCall: TC,
+  codemodeResult: T_RESULT,
+  answer: T_RESULT + 1500,
+};
 
 const Boxes = () => {
   const stepRef = useRef<SVGTextElement | null>(null);
@@ -153,9 +163,9 @@ const Boxes = () => {
   );
 };
 
-export const AgentTool = () => (
+export const AgentTool = ({ startAt = 0 }: { startAt?: number }) => (
   <div>
-    <Flow.Root duration={DURATION} posterTime={4400} aria-label="Codemode as one tool inside an agent loop" className="dg-solo" pauseWhenOffscreen={false}>
+    <Flow.Root duration={DURATION} posterTime={startAt} resetTime={startAt} aria-label="Codemode as one tool inside an agent loop" className="dg-solo" pauseWhenOffscreen={false}>
       <Flow.Stage width={W} height={H}>
         <Boxes />
         <Flow.Token track={thinkTrack}><div className="llm-ring" /></Flow.Token>
