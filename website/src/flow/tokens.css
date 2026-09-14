@@ -1,0 +1,19 @@
+/* Light-mode design tokens consumed by the Flow engine and diagrams. */
+.flow-scope {
+  --rlh: 1.5rem;
+  --micro: 0.7rem;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  --fg: #16181d;
+  --fg-secondary: #4b5160;
+  --fg-tertiary: #8a90a0;
+  --fg-border: #d9dce3;
+  --bg: #ffffff;
+  --bg-muted: #f4f5f8;
+
+  --accent: #6c5ce7;     /* violet — llm / code */
+  --accent-1: #ff6b6b;   /* red — expensive / error */
+  --accent-2: #00b894;   /* green — success / result */
+  --accent-3: #fdcb6e;   /* amber — tool / waiting */
+  --accent-4: #0984e3;   /* blue — sandbox */
+}
