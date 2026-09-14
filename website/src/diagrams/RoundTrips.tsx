@@ -198,13 +198,20 @@ const Boxes = ({ sandbox }: { sandbox?: boolean }) => (
 
 export const RoundTripsCompare = ({
   which = "both",
+  paused = false,
+  posterTime = 4000,
 }: {
   which?: "both" | "tools" | "code";
+  /** Freeze the clock on the poster frame (e.g. "the script is about to run"). */
+  paused?: boolean;
+  posterTime?: number;
 }) => (
   <div>
     <Flow.Root
       duration={DURATION}
-      posterTime={4000}
+      posterTime={posterTime}
+      paused={paused}
+      controls={!paused}
       aria-label="Tool calling versus codemode round trips"
       className={which === "both" ? "dg-grid2" : "dg-solo"}
       pauseWhenOffscreen={false}

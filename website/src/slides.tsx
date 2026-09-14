@@ -44,11 +44,29 @@ const CodemodeSlide = () => {
   return (
     <Slide kicker="Codemode">
       <h2>Let the agent write a script and skip the intermediate steps</h2>
-      {step === 0 ? (
-        <RoundTripsCompare key="code" which="code" />
-      ) : (
-        <RoundTripsCompare key="both" which="both" />
-      )}
+      <div className="row grow" style={{ alignItems: "center" }}>
+        <div className="col" style={{ flex: "0 0 600px" }}>
+          <Code title={step === 0 ? "what the LLM wrote" : "running in the sandbox"}>{`
+const a = await toolA();
+const b = await toolB(a.id);
+const c = await toolC(b.items);
+return { total: c.length, top: c[0] };
+`}</Code>
+          <Frag at={1}>
+            <p className="small muted" style={{ marginTop: 10 }}>
+              The sandbox makes the three calls. The LLM sees only the return value.
+            </p>
+          </Frag>
+        </div>
+        <div className="col">
+          <RoundTripsCompare
+            key={step === 0 ? "paused" : "playing"}
+            which="code"
+            paused={step === 0}
+            posterTime={step === 0 ? 800 : 0}
+          />
+        </div>
+      </div>
     </Slide>
   );
 };
@@ -292,7 +310,7 @@ export const slides: SlideDef[] = [
     ),
   },
 
-  // 5 ── Codemode definition: alone first, then side by side
+  // 5 ── Codemode definition: the script, then run it
   {
     steps: 1,
     render: () => <CodemodeSlide />,
