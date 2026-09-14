@@ -270,40 +270,26 @@ code, pre, kbd { font-family: var(--font-mono); }
 .ap-foot p { font-size: 24px; }
 
 /* ── Code steps (title inline above its code) ───────────────────── */
-.cs { display: flex; flex-direction: column; gap: 18px; }
+.cs { display: flex; flex-direction: column; gap: 14px; }
+.cs[data-compact="true"] { gap: 26px; }
 .cs-item { transition: opacity 300ms ease; }
+.cs-item[data-state="hidden"] { opacity: 0; }
 .cs-item[data-state="off"] { opacity: 0.28; }
 .cs-item[data-state="done"] { opacity: 0.6; }
 .cs-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
 .cs-num {
-  width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; align-self: center;
+  width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; align-self: center;
   background: var(--bg-muted); border: 1px solid var(--fg-border);
-  font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--fg-secondary);
+  font-family: var(--font-mono); font-size: 17px; font-weight: 600; color: var(--fg-secondary);
+  transition: background 300ms ease, color 300ms ease;
 }
-.cs-item[data-state="on"] .cs-num { background: var(--accent); border-color: var(--accent); color: #fff; }
-.cs-title { font-size: 26px; font-weight: 650; letter-spacing: -0.01em; }
-.cs-sub { font-size: 19px; color: var(--fg-secondary); }
+.cs-item[data-state="plain"] .cs-num, .cs-item[data-state="on"] .cs-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cs-title { font-size: 30px; font-weight: 650; letter-spacing: -0.01em; transition: font-size 300ms ease; }
+.cs[data-compact="false"] .cs-title { font-size: 26px; }
+.cs-sub { font-size: 19px; color: var(--fg-secondary); opacity: 0; transition: opacity 300ms ease 150ms; }
+.cs-sub[data-open="true"] { opacity: 1; }
+.cs-code { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 420ms cubic-bezier(.2,.7,.2,1); }
+.cs-code > div { overflow: hidden; }
+.cs-code[data-open="true"] { grid-template-rows: 1fr; }
 .cs-item[data-state="on"] .code { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
 .cs .code { padding: 14px 20px; font-size: 18px; }
-
-/* ── Steps grow ─────────────────────────────────────────────────── */
-.sg { margin: 0; padding-left: 0; list-style: none; counter-reset: sg; display: flex; flex-direction: column; gap: 7px; }
-.sg li {
-  counter-increment: sg; display: flex; align-items: center; gap: 14px;
-  font-size: 26px; color: var(--fg);
-  padding: 10px 16px; border-radius: 10px; border: 1px solid var(--fg-border); background: var(--bg);
-  transition: opacity 300ms ease, background 300ms ease;
-}
-.sg li::before {
-  content: counter(sg); width: 30px; height: 30px; border-radius: 8px; flex: none;
-  display: grid; place-items: center; background: var(--bg-muted); border: 1px solid var(--fg-border);
-  font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--fg-secondary);
-}
-.sg li > span:first-of-type { flex: 1; }
-.sg[data-struck="true"] li { opacity: 0.45; text-decoration: line-through; }
-.sg.grown li { font-size: 21px; padding: 5px 14px; }
-.sg.grown li.orig { font-weight: 650; }
-.sg.grown li.orig::before { background: var(--accent); border-color: var(--accent); color: #fff; }
-.sg.grown li.added { color: var(--fg-secondary); }
-.sg.grown li[data-new="true"] { background: rgba(108,92,231,0.08); border-color: var(--accent); animation: sg-in 350ms ease both; }
-@keyframes sg-in { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }

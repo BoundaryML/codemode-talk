@@ -113,25 +113,48 @@ const AnnotatedPrompt = () => {
   );
 };
 
-/** Numbered steps where each title sits directly above its own code. */
-const CodeSteps = ({
-  items,
-}: {
-  items: { title: React.ReactNode; sub?: React.ReactNode; code: string }[];
-}) => {
+/** Shows "Simple, right?" only at step 3, then hides it as code comes in. */
+const SimpleRight = () => {
   const step = useStep();
   return (
-    <div className="cs">
+    <div className="frag" data-hidden={step !== 3} style={{ position: "absolute", left: 120, bottom: 110 }}>
+      <p className="lead">Simple, right?</p>
+    </div>
+  );
+};
+
+/**
+ * Numbered steps where each title sits directly above its own code.
+ * Titles reveal at `revealAt[i]`; the code (and sub text) expands in at `codeAt[i]`.
+ */
+const CodeSteps = ({
+  items,
+  revealAt,
+  codeAt,
+}: {
+  items: { title: React.ReactNode; sub?: React.ReactNode; code: string }[];
+  revealAt: number[];
+  codeAt: number[];
+}) => {
+  const step = useStep();
+  const anyCode = step >= Math.min(...codeAt);
+  return (
+    <div className="cs" data-compact={!anyCode}>
       {items.map((it, i) => {
-        const state = i === step ? "on" : i < step ? "done" : "off";
+        const shown = step >= revealAt[i];
+        const open = step >= codeAt[i];
+        const active = open && (i === items.length - 1 ? true : step < codeAt[i + 1]);
+        const state = !shown ? "hidden" : active ? "on" : open ? "done" : anyCode ? "off" : "plain";
         return (
           <div key={i} className="cs-item" data-state={state}>
             <div className="cs-head">
               <span className="cs-num">{i + 1}</span>
               <span className="cs-title">{it.title}</span>
-              {it.sub ? <span className="cs-sub">{it.sub}</span> : null}
+              {it.sub ? <span className="cs-sub" data-open={open}>{it.sub}</span> : null}
             </div>
-            <Code small>{it.code}</Code>
+            <div className="cs-code" data-open={open}>
+              <div><Code small>{it.code}</Code></div>
+            </div>
           </div>
         );
       })}
@@ -287,23 +310,26 @@ export const slides: SlideDef[] = [
   {
     steps: 3,
     render: () => (
-      <Slide kicker="Why does codemode exist?">
-        <h2>At the end of the day we care about two things: latency and cost.</h2>
+      <Slide kicker="Why use codemode?">
+        <h2>Cheaper, and faster.</h2>
         <div className="row" style={{ marginTop: 12 }}>
           <Frag at={1} className="card good">
-            <span className="tag good">round trips</span>
+            <span className="tag good">faster</span>
             <h3>One LLM turn instead of N</h3>
-            <p>No waiting on the model between tool calls. The sandbox runs at machine speed.</p>
+            <p>No waiting on the model between tool calls. The sandbox runs at machine speed, and loops, retries and <code>Promise.all</code> are just code.</p>
           </Frag>
           <Frag at={2} className="card good">
-            <span className="tag good">context</span>
+            <span className="tag good">cheaper</span>
             <h3>Results never enter the context</h3>
-            <p>Filter, fan out, aggregate a 50k-row payload in code. The model sees only the summary.</p>
+            <p>Filter, fan out, aggregate a 50k-row payload in code. The model only ever sees the summary.</p>
           </Frag>
           <Frag at={3} className="card accent">
-            <span className="tag violet">bonus</span>
-            <h3>Loops, retries, branches for free</h3>
-            <p>It's just code. <code>for</code>, <code>try/catch</code>, <code>Promise.all</code> are better than another prompt.</p>
+            <span className="tag violet">anthropic's numbers</span>
+            <div className="row" style={{ gap: 28, marginTop: 4 }}>
+              <div className="stat"><span className="n" style={{ fontSize: 72, color: "var(--accent)" }}>24%</span><span className="l">fewer input tokens</span></div>
+              <div className="stat"><span className="n" style={{ fontSize: 72, color: "var(--accent)" }}>+11%</span><span className="l">accuracy</span></div>
+            </div>
+            <p className="small muted">Programmatic tool calling on top of basic search tools, vs. plain tool calling. From "Improved web search with dynamic filtering."</p>
           </Frag>
         </div>
       </Slide>
@@ -372,33 +398,15 @@ export const slides: SlideDef[] = [
     ),
   },
 
-  // Let's build it: the naive flow
+  // Let's build it: three steps, then the code gets injected in place
   {
-    steps: 3,
+    steps: 6,
     render: () => (
       <Slide kicker="Let's build codemode, step by step">
         <h2>The flow</h2>
-        <Steps
-          items={[
-            { title: "Make an LLM generate code" },
-            { title: "Run it", at: 1 },
-            { title: "Save $$$$", at: 2 },
-          ]}
-        />
-        <Frag at={3}>
-          <p className="lead">Simple, right?</p>
-        </Frag>
-      </Slide>
-    ),
-  },
-
-  // 10 ── Actually: steps inline with the code they correspond to
-  {
-    steps: 2,
-    render: () => (
-      <Slide kicker="Let's build codemode, step by step">
-        <h2>Actually…</h2>
         <CodeSteps
+          revealAt={[0, 1, 2]}
+          codeAt={[4, 5, 6]}
           items={[
             {
               title: "Make an LLM generate code",
@@ -431,6 +439,7 @@ return result; // 🤑
             },
           ]}
         />
+        <SimpleRight />
       </Slide>
     ),
   },
