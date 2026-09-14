@@ -4,12 +4,14 @@ export const Slide = ({
   children,
   className,
   kicker,
+  style,
 }: {
   children: ReactNode;
   className?: string;
   kicker?: string;
+  style?: React.CSSProperties;
 }) => (
-  <section className={`slide ${className ?? ""}`}>
+  <section className={`slide ${className ?? ""}`} style={style}>
     {kicker ? <div className="kicker">{kicker}</div> : null}
     {children}
     <div className="footer">

@@ -314,3 +314,11 @@ code, pre, kbd { font-family: var(--font-mono); }
 }
 .sg2-kid[data-open="true"] .sg2-kidin { opacity: 1; transform: none; }
 .sg2-kid[data-new="true"] .sg2-kidin { background: rgba(108,92,231,0.14); }
+
+/* dense variant for the 5-step loop slide */
+.cs[data-dense="true"] { gap: 8px; }
+.cs[data-dense="true"] .cs-head { margin-bottom: 4px; }
+.cs[data-dense="true"] .cs-num { width: 32px; height: 32px; font-size: 15px; border-radius: 8px; }
+.cs[data-dense="true"] .cs-title { font-size: 22px; }
+.cs[data-dense="true"] .cs-sub { font-size: 17px; }
+.cs[data-dense="true"] .code { padding: 8px 16px; font-size: 16.5px; line-height: 1.45; }

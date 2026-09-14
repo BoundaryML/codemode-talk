@@ -131,15 +131,17 @@ const CodeSteps = ({
   items,
   revealAt,
   codeAt,
+  dense,
 }: {
   items: { title: React.ReactNode; sub?: React.ReactNode; code: string }[];
   revealAt: number[];
   codeAt: number[];
+  dense?: boolean;
 }) => {
   const step = useStep();
   const anyCode = step >= Math.min(...codeAt);
   return (
-    <div className="cs" data-compact={!anyCode}>
+    <div className="cs" data-compact={!anyCode} data-dense={dense}>
       {items.map((it, i) => {
         const shown = step >= revealAt[i];
         const open = step >= codeAt[i];
@@ -523,112 +525,66 @@ return result; // 🤑
     render: () => <StepsGrow />,
   },
 
-  // 16 ── But wait, there's more
+  // The whole loop, concretely
   {
-    steps: 3,
+    steps: 4,
     render: () => (
-      <Slide kicker="But wait, there's more">
-        <h2>Once your agent writes code, everything is on the table</h2>
-        <div className="row" style={{ marginTop: 12 }}>
-          <Frag at={1} className="card">
-            <span className="tag blue">state</span>
-            <h3>Persistent sessions</h3>
-            <p>Keep the sandbox alive between turns. Variables are memory. ARC-AGI style: build up helpers over time.</p>
-          </Frag>
-          <Frag at={2} className="card">
-            <span className="tag violet">recursion</span>
-            <h3>Recursive self-improvement</h3>
-            <p>What if you gave an agent <em>only one</em> tool: <code>execute</code>? It can write its own tools, then use them.</p>
-          </Frag>
-          <Frag at={3} className="card">
-            <span className="tag good">safety</span>
-            <h3>Approvals in code</h3>
-            <p>Wrap <code>email.send()</code> in an approval gate. Pop a dialog when the script hits it. Like Instinct.</p>
-          </Frag>
-        </div>
+      <Slide kicker="Let's build codemode, step by step">
+        <h2>The whole loop, in code</h2>
+        <CodeSteps
+          dense
+          revealAt={[0, 1, 2, 3, 4]}
+          codeAt={[0, 1, 2, 3, 4]}
+          items={[
+            {
+              title: "search()",
+              sub: "names only, the catalog never enters the prompt",
+              code: `
+const names = await tools.search({ query: task });
+// ["github.listIssues", "linear.createTicket", "slack.post"]
+`,
+            },
+            {
+              title: "describe()",
+              sub: "the .d.ts for exactly those tools",
+              code: `
+const spec = await tools.describe({ names });
+`,
+            },
+            {
+              title: "write the script",
+              sub: "the LLM sees ~1k tokens of types, not 278k",
+              code: `
+let code = await llm(\`Write JS using only: \${spec}. Task: \${task}\`);
+`,
+            },
+            {
+              title: "check it",
+              sub: "it's a string from a language model; type-check before you trust it",
+              code: `
+const errors = typecheck(code, spec);
+if (errors.length) code = await llm(\`Fix: \${errors}\`, code);
+`,
+            },
+            {
+              title: "run it in a sandbox",
+              sub: "only the picked tools are in scope; only the result comes back",
+              code: `
+const result = await sandbox.run(code, { tools: pick(tools, names) });
+return result;
+`,
+            },
+          ]}
+        />
       </Slide>
     ),
   },
 
-  // 17 ── Approval snippet
+  // Punchline
   {
     render: () => (
-      <Slide kicker="Approvals in code">
-        <div className="row grow">
-          <div className="col" style={{ flex: "0 0 520px" }}>
-            <h2>The gate is just a wrapper</h2>
-            <p>
-              The agent's script never knows. It calls <code>email.send</code>; the
-              sandbox pauses and asks you.
-            </p>
-          </div>
-          <div className="col">
-            <Code title="sandbox/tools.py">{`
-def approval(fn):
-    def wrapped(*args, **kwargs):
-        ok = ask_human(f"Allow {fn.__name__}{args}?")
-        if not ok:
-            raise PermissionError("denied by user")
-        return fn(*args, **kwargs)
-    return wrapped
-
-email.send = approval(email.send)
-stripe.refund = approval(stripe.refund)
-`}</Code>
-          </div>
-        </div>
-      </Slide>
-    ),
-  },
-
-  // 18 ── Problem: where to run
-  {
-    steps: 1,
-    render: () => (
-      <Slide kicker="Problems">
-        <h2>Where should I run this code?</h2>
-        <p>
-          If you give an agent a file system and <code>eval</code>, it can literally
-          execute anything.
-        </p>
-        <Frag at={1} className="grow" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
-          <img className="img plain" src="/img/sandboxes-light.png" alt="Every company shipping a sandbox" style={{ maxHeight: 520 }} />
-        </Frag>
-        <p className="small muted">It's easy. Just choose a sandbox provider.</p>
-      </Slide>
-    ),
-  },
-
-  // 19 ── Problem: observability
-  {
-    steps: 2,
-    render: () => (
-      <Slide kicker="Problems">
-        <h2>How do I observe what these agents are writing?</h2>
-        <div className="row grow">
-          <div className="col">
-            <Frag at={1}>
-              <ul>
-                <li>What do these programs usually look like?</li>
-                <li>Which functions do they call, and how often?</li>
-                <li>Which ones fail, and where?</li>
-                <li>Can I replay a run? Diff two runs?</li>
-              </ul>
-            </Frag>
-            <Frag at={2}>
-              <div className="card accent" style={{ marginTop: 20 }}>
-                <p>
-                  Treat generated code as a <strong>trace</strong>, not a black box.
-                  The script <em>is</em> the plan; log every tool call with its args.
-                </p>
-              </div>
-            </Frag>
-          </div>
-          <div className="col">
-            <WorkflowBuild />
-            <p className="small muted" style={{ marginTop: -8 }}>Demo idea: watch the BAML graph grow as the code streams in.</p>
-          </div>
-        </div>
+      <Slide className="center" style={{ padding: 40 }}>
+        <img className="img plain" src="/img/i-just-wanted-a-function.png" alt="I just wanted it to call a function" style={{ maxHeight: 780 }} />
       </Slide>
     ),
   },
@@ -663,6 +619,7 @@ stripe.refund = approval(stripe.refund)
   {
     render: () => (
       <Slide kicker="Observations · Claude programmatic tool calling">
+        <h2>Two details that bite you</h2>
         <div className="row grow">
           <div className="col">
             <h3>Claude responds with <code>tool_use</code>, tagged with a caller</h3>
@@ -686,13 +643,142 @@ stripe.refund = approval(stripe.refund)
           <div className="col">
             <h3>Interesting limits</h3>
             <img className="img" src="/img/ptc-limits.png" alt="Constraints and limitations" />
-            <div className="card good">
-              <p>
-                "Adding programmatic tool calling on top of basic search tools improved
-                performance by an average of <strong>11%</strong> while using{" "}
-                <strong>24% fewer input tokens</strong>."
-              </p>
-            </div>
+          </div>
+        </div>
+      </Slide>
+    ),
+  },
+
+  // But wait, there's more: one tool
+  {
+    steps: 1,
+    render: () => (
+      <Slide className="center">
+        <div className="kicker">But wait, there's more</div>
+        <h2 style={{ maxWidth: 1200 }}>
+          What if you gave an agent <em>only one</em> tool: <code>execute()</code>?
+        </h2>
+        <Frag at={1}>
+          <p className="lead" style={{ maxWidth: 1100 }}>
+            It writes its own tools, then uses them. Keep the sandbox alive between turns and
+            those tools <em>persist</em>. That's memory.
+          </p>
+        </Frag>
+      </Slide>
+    ),
+  },
+
+  // Approvals in code
+  {
+    render: () => (
+      <Slide kicker="But wait, there's more">
+        <div className="row grow">
+          <div className="col" style={{ flex: "0 0 520px" }}>
+            <h2>The scary calls get a gate</h2>
+            <p>
+              The script never knows. It calls <code>email.send</code>; the sandbox pauses and asks
+              you. Like Instinct.
+            </p>
+          </div>
+          <div className="col">
+            <Code title="sandbox/tools.ts">{`
+const approval = (name: string, fn: Tool): Tool =>
+  async (args) => {
+    const ok = await askHuman(\`Allow \${name}(\${args})?\`);
+    if (!ok) throw new Error(\`\${name}: denied\`);
+    return fn(args);
+  };
+
+const { email, stripe } = tools;
+email.send    = approval("email.send",    email.send);
+stripe.refund = approval("stripe.refund", stripe.refund);
+`}</Code>
+          </div>
+        </div>
+      </Slide>
+    ),
+  },
+
+  // 18 ── Problem: where to run
+  {
+    steps: 1,
+    render: () => (
+      <Slide kicker="Problems">
+        <h2>Where should I run this code?</h2>
+        <p>
+          If you give an agent a file system and <code>eval</code>, it can literally
+          execute anything.
+        </p>
+        <Frag at={1} className="grow" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
+          <img className="img plain" src="/img/sandboxes-light.png" alt="Every company shipping a sandbox" style={{ maxHeight: 520 }} />
+        </Frag>
+        <p className="small muted">It's easy. Just choose a sandbox provider.</p>
+      </Slide>
+    ),
+  },
+
+  // 19 ── Problem: observability
+  {
+    steps: 1,
+    render: () => (
+      <Slide kicker="Problems">
+        <h2>How do I observe what these agents are writing?</h2>
+        <div className="row grow">
+          <div className="col">
+            <Frag at={0}>
+              <ul>
+                <li>What do these programs usually look like?</li>
+                <li>Which functions do they call, and how often?</li>
+                <li>Which ones fail, and where?</li>
+                <li>Can I replay a run? Diff two runs?</li>
+              </ul>
+            </Frag>
+            <Frag at={1}>
+              <div className="card accent" style={{ marginTop: 20 }}>
+                <p>
+                  Treat generated code as a <strong>trace</strong>, not a black box.
+                  The script <em>is</em> the plan; log every tool call with its args.
+                </p>
+              </div>
+            </Frag>
+          </div>
+          <div className="col">
+            <Code title="what a run looks like, logged" small>{`
+github.listIssues   { label: "p0" }          → 2 rows
+linear.createTicket { title: "Parser panics" } → ENG-1001
+linear.createTicket { title: "Streaming…" }    → ENG-1002
+slack.post          { channel: "#eng" }        → ok
+email.send          { to: "cto@…" }            ⏸ approval?
+`}</Code>
+          </div>
+        </div>
+      </Slide>
+    ),
+  },
+
+  // Demo: the same loop in BAML
+  {
+    render: () => (
+      <Slide kicker="Demo">
+        <h2>The same loop, in BAML</h2>
+        <div className="row grow">
+          <div className="col">
+            <Code title="baml_src/codemode.baml" small>{`
+function main(task: string) -> string {
+  let queries = PlanSearch(task);            // LLM
+  let names   = queries.flat_map(search_tools);
+  let spec    = describe_tools(names);
+  let script  = WriteScript(task, spec);     // LLM
+  run_script(script.code)                    // node
+}
+`}</Code>
+            <Code small>{`
+$ baml run main -- --task "File a Linear ticket
+    for each p0 bug in boundaryml/baml, then tell Slack"
+`}</Code>
+          </div>
+          <div className="col">
+            <WorkflowBuild />
           </div>
         </div>
       </Slide>
@@ -713,7 +799,7 @@ stripe.refund = approval(stripe.refund)
 
   // 23 ── Recap
   {
-    steps: 4,
+    steps: 5,
     render: () => (
       <Slide kicker="Recap">
         <h2>Codemode in one slide</h2>
@@ -723,9 +809,10 @@ stripe.refund = approval(stripe.refund)
             { title: "Codemode: the LLM writes one script, a sandbox runs it", sub: "one turn, results stay out of context", at: 1 },
             { title: "search() + describe() keep the prompt small", sub: "don't ship 1,640 tool schemas", at: 2 },
             { title: "Sandbox it. Gate the dangerous calls. Log everything.", sub: "the script is your trace", at: 3 },
+            { title: "It's an agent architecture, not a trick", sub: "budget for the search, describe and check steps", at: 4 },
           ]}
         />
-        <Frag at={4}>
+        <Frag at={5}>
           <p className="lead" style={{ marginTop: 8 }}>Your agent works like magic, and you can still sleep at night.</p>
         </Frag>
       </Slide>
