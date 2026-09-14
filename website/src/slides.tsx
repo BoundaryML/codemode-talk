@@ -252,7 +252,7 @@ export const slides: SlideDef[] = [
 
   // 3 ── The problem with tool calling
   {
-    steps: 2,
+    steps: 1,
     render: () => (
       <Slide kicker="The problem with tool calling (and MCP)">
         <div className="row grow">
@@ -263,12 +263,6 @@ export const slides: SlideDef[] = [
               <code>A</code>, then <code>C</code> with the output of <code>B</code>?
             </p>
             <Frag at={1}>
-              <p>
-                That's <strong>three or four LLM turns</strong>. Every intermediate
-                result lands in the context window whether you need it or not.
-              </p>
-            </Frag>
-            <Frag at={2}>
               <p className="small muted">
                 MCP makes this worse: the whole tool catalog is in the prompt too.
               </p>
