@@ -3,42 +3,9 @@ import { Frag, useStep } from "./deck";
 import { Slide, Code } from "./ui";
 import { RoundTripsCompare } from "./diagrams/RoundTrips";
 import { ContextBloat } from "./diagrams/ContextBloat";
-import { WorkflowBuild } from "./diagrams/WorkflowBuild";
 import { TokenBars } from "./diagrams/TokenBars";
 import { AgentLoop } from "./diagrams/AgentLoop";
 import { AgentTool, AGENT_TOOL_TIMES } from "./diagrams/AgentTool";
-
-const Steps = ({
-  items,
-  activeFrom = 0,
-}: {
-  items: { title: React.ReactNode; sub?: React.ReactNode; at?: number; bad?: boolean }[];
-  /** step index at which highlighting starts (before that everything is neutral) */
-  activeFrom?: number;
-}) => {
-  const step = useStep();
-  return (
-    <ol className="steps" style={{ listStyle: "none", padding: 0 }}>
-      {items.map((it, i) => {
-        const at = it.at ?? 0;
-        const hidden = step < at;
-        const on = step >= activeFrom && step >= at;
-        return (
-          <li
-            key={i}
-            className={`step ${on ? "on" : ""} ${hidden ? "dim" : ""}`}
-            style={hidden ? { opacity: 0.18 } : undefined}
-          >
-            <div>
-              <span className={it.bad ? "bad" : ""}>{it.title}</span>
-              {it.sub ? <span className="sub">{it.sub}</span> : null}
-            </div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-};
 
 const CodemodeSlide = () => {
   const step = useStep();
@@ -268,7 +235,11 @@ const AgentToolSlide = () => {
           {showCode ? (
             <>
               <Code title="agent.ts" small>{`
-const tools = { web_search, read_file, codemode };
+const tools = {
+  web_search: (q: string) => search(q),
+  read_file:  (path: string) => fs.readFile(path, "utf8"),
+  codemode:   (task: string) => codemode(task),   // search → describe → write → check → run
+};
 
 for (let step = 0; step < MAX_STEPS; step++) {
   const turn = await llm(messages, tools);
@@ -663,264 +634,25 @@ return result;
     ),
   },
 
-  // 20 ── Claude programmatic tool calling
+  // Live demo
   {
-    steps: 3,
-    render: () => (
-      <Slide kicker="Observations · Claude programmatic tool calling">
-        <h2>Anthropic calls it "programmatic tool calling", not codemode</h2>
-        <div className="row grow">
-          <div className="col">
-            <Frag at={1} mode="dim">
-              <p><strong>Claude owns the loop.</strong> Your server is a dumb machine that just runs tools.</p>
-            </Frag>
-            <Frag at={2} mode="dim">
-              <p><strong>Your server owns auth.</strong> No env vars, no secrets in the sandbox. You just pass schemas.</p>
-            </Frag>
-            <Frag at={3} mode="dim">
-              <p><strong>Control is inverted.</strong> Claude could be writing bash, Python, or Rust for all you care. You're just another part of the workflow.</p>
-            </Frag>
-          </div>
-          <div className="col">
-            <img className="img" src="/img/ptc-how.png" alt="How programmatic tool calling works" />
-          </div>
-        </div>
-      </Slide>
-    ),
-  },
-
-  // 21 ── PTC details
-  {
-    render: () => (
-      <Slide kicker="Observations · Claude programmatic tool calling">
-        <h2>Two details that bite you</h2>
-        <div className="row grow">
-          <div className="col">
-            <h3>Claude responds with <code>tool_use</code>, tagged with a caller</h3>
-            <Code small>{`
-{
-  "type": "tool_use",
-  "id": "toolu_abc123",
-  "name": "query_database",
-  "input": { "sql": "<sql>" },
-  "caller": {
-    "type": "code_execution_20260120",
-    "tool_id": "srvtoolu_xyz789"
-  }
-}
-`}</Code>
-            <p className="small">
-              Your result goes back to the <em>running code</em>, not the context. Remember
-              to pass the <code>container</code> id back or the API rejects the continuation.
-            </p>
-          </div>
-          <div className="col">
-            <h3>Interesting limits</h3>
-            <img className="img" src="/img/ptc-limits.png" alt="Constraints and limitations" />
-          </div>
-        </div>
-      </Slide>
-    ),
-  },
-
-  // But wait, there's more: one tool
-  {
-    steps: 1,
     render: () => (
       <Slide className="center">
-        <div className="kicker">But wait, there's more</div>
-        <h2 style={{ maxWidth: 1200 }}>
-          What if you gave an agent <em>only one</em> tool: <code>execute()</code>?
-        </h2>
-        <Frag at={1}>
-          <p className="lead" style={{ maxWidth: 1100 }}>
-            It writes its own tools, then uses them. Keep the sandbox alive between turns and
-            those tools <em>persist</em>. That's memory.
-          </p>
-        </Frag>
+        <h1>Live demo</h1>
       </Slide>
     ),
   },
 
-  // Approvals in code
+  // Thanks
   {
     render: () => (
-      <Slide kicker="But wait, there's more">
-        <div className="row grow">
-          <div className="col" style={{ flex: "0 0 520px" }}>
-            <h2>The scary calls get a gate</h2>
-            <p>
-              The script never knows. It calls <code>email.send</code>; the sandbox pauses and asks
-              you. Like Instinct.
-            </p>
-          </div>
-          <div className="col">
-            <Code title="sandbox/tools.ts">{`
-const approval = (name: string, fn: Tool): Tool =>
-  async (args) => {
-    const ok = await askHuman(\`Allow \${name}(\${args})?\`);
-    if (!ok) throw new Error(\`\${name}: denied\`);
-    return fn(args);
-  };
-
-const { email, stripe } = tools;
-email.send    = approval("email.send",    email.send);
-stripe.refund = approval("stripe.refund", stripe.refund);
-`}</Code>
-          </div>
-        </div>
-      </Slide>
-    ),
-  },
-
-  // 18 ── Problem: where to run
-  {
-    steps: 1,
-    render: () => (
-      <Slide kicker="Problems">
-        <h2>Where should I run this code?</h2>
-        <p>
-          If you give an agent a file system and <code>eval</code>, it can literally
-          execute anything.
+      <Slide className="center">
+        <h1>Thanks</h1>
+        <p className="lead" style={{ marginTop: 24 }}>Aaron Villalpando &amp; Avery Townsend</p>
+        <p className="muted" style={{ marginTop: 32, display: "flex", gap: 48, fontSize: 30 }}>
+          <a href="https://boundaryml.com">boundaryml.com</a>
+          <a href="https://github.com/boundaryml/baml">github.com/boundaryml/baml</a>
         </p>
-        <Frag at={1} className="grow" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40 }}>
-          <img className="img plain" src="/img/sandboxes-light.png" alt="Every company shipping a sandbox" style={{ maxHeight: 520 }} />
-        </Frag>
-        <p className="small muted">It's easy. Just choose a sandbox provider.</p>
-      </Slide>
-    ),
-  },
-
-  // 19 ── Problem: observability
-  {
-    steps: 1,
-    render: () => (
-      <Slide kicker="Problems">
-        <h2>How do I observe what these agents are writing?</h2>
-        <div className="row grow">
-          <div className="col">
-            <Frag at={0}>
-              <ul>
-                <li>What do these programs usually look like?</li>
-                <li>Which functions do they call, and how often?</li>
-                <li>Which ones fail, and where?</li>
-                <li>Can I replay a run? Diff two runs?</li>
-              </ul>
-            </Frag>
-            <Frag at={1}>
-              <div className="card accent" style={{ marginTop: 20 }}>
-                <p>
-                  Treat generated code as a <strong>trace</strong>, not a black box.
-                  The script <em>is</em> the plan; log every tool call with its args.
-                </p>
-              </div>
-            </Frag>
-          </div>
-          <div className="col">
-            <Code title="what a run looks like, logged" small>{`
-github.listIssues   { label: "p0" }          → 2 rows
-linear.createTicket { title: "Parser panics" } → ENG-1001
-linear.createTicket { title: "Streaming…" }    → ENG-1002
-slack.post          { channel: "#eng" }        → ok
-email.send          { to: "cto@…" }            ⏸ approval?
-`}</Code>
-          </div>
-        </div>
-      </Slide>
-    ),
-  },
-
-  // Demo: the same loop in BAML
-  {
-    render: () => (
-      <Slide kicker="Demo">
-        <h2>The same loop, in BAML</h2>
-        <div className="row grow">
-          <div className="col">
-            <Code title="baml_src/agent.baml" small>{`
-function agent(task: string) -> string {
-  let tools = [WebSearch, ReadFile, Codemode];
-  let messages = [user(task)];
-  let step = 0;
-  while (step < 5) {
-    match (Agent(messages, tools)) {
-      Answer { text: let t } => { return t; },
-      ToolCall { name: "codemode", args: let a } =>
-        messages.push(codemode(a.task)),
-      ToolCall { name: let n, args: let a } =>
-        messages.push(run(n, a)),
-    }
-    step += 1;
-  }
-  "gave up after 5 steps"
-}
-`}</Code>
-            <Code small>{`
-$ baml run agent -- --task "File Linear tickets for our p0 bugs"
-`}</Code>
-          </div>
-          <div className="col">
-            <WorkflowBuild />
-          </div>
-        </div>
-      </Slide>
-    ),
-  },
-
-  // 22 ── Embrace bash and code
-  {
-    render: () => (
-      <Slide className="center">
-        <div className="kicker">Mario Zechner · creator of pi</div>
-        <h2 style={{ maxWidth: 1200 }}>"What if you don't need MCP?"</h2>
-        <p className="lead">Embrace bash and code.</p>
-        <p className="muted">The agent already knows how to write programs. Let it.</p>
-      </Slide>
-    ),
-  },
-
-  // 23 ── Recap
-  {
-    steps: 5,
-    render: () => (
-      <Slide kicker="Recap">
-        <h2>Codemode in one slide</h2>
-        <Steps
-          items={[
-            { title: "Tool calling bounces every result through the LLM", sub: "slow, expensive, context bloat", at: 0 },
-            { title: "Codemode: the LLM writes one script, a sandbox runs it", sub: "one turn, results stay out of context", at: 1 },
-            { title: "search() + describe() keep the prompt small", sub: "don't ship 1,640 tool schemas", at: 2 },
-            { title: "Sandbox it. Gate the dangerous calls. Log everything.", sub: "the script is your trace", at: 3 },
-            { title: "It's an agent architecture, not a trick", sub: "budget for the search, describe and check steps", at: 4 },
-          ]}
-        />
-        <Frag at={5}>
-          <p className="lead" style={{ marginTop: 8 }}>Your agent works like magic, and you can still sleep at night.</p>
-        </Frag>
-      </Slide>
-    ),
-  },
-
-  // 24 ── Links / thanks
-  {
-    render: () => (
-      <Slide className="center">
-        <h2>Thanks</h2>
-        <p className="lead">Avery Townsend &amp; Aaron Villalpando · Boundary</p>
-        <div className="row" style={{ marginTop: 24, textAlign: "left", width: "100%", maxWidth: 1300 }}>
-          <ul className="small">
-            <li><a href="https://blog.cloudflare.com/code-mode/">blog.cloudflare.com/code-mode</a></li>
-            <li><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling">Claude · programmatic tool calling</a></li>
-            <li><a href="https://pydantic.dev/articles/pydantic-monty">pydantic.dev · monty</a></li>
-            <li><a href="https://executor.sh/">executor.sh</a></li>
-          </ul>
-          <ul className="small">
-            <li><a href="https://mariozechner.at/posts/2025-11-02-what-if-you-dont-need-mcp/">What if you don't need MCP?</a></li>
-            <li><a href="https://bun.com/blog/bun-in-rust">Bun in Rust</a></li>
-            <li><a href="https://github.com/portofcontext/pctx/blob/main/docs/code-mode.md">pctx · code-mode</a></li>
-            <li><a href="https://boundaryml.com">boundaryml.com · BAML</a></li>
-          </ul>
-        </div>
       </Slide>
     ),
   },
