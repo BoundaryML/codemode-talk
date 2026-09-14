@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Flow, defineTrack, useFlowFrame } from "../flow";
 import "./diagrams.css";
 
@@ -113,6 +113,7 @@ export const AGENT_TOOL_TIMES = {
   codemodeCall: TC,
   codemodeResult: T_RESULT,
   answer: T_RESULT + 1500,
+  end: T_RESULT + 2400,
 };
 
 const Boxes = () => {
@@ -163,32 +164,61 @@ const Boxes = () => {
   );
 };
 
-export const AgentTool = ({ startAt = 0 }: { startAt?: number }) => (
-  <div>
-    <Flow.Root duration={DURATION} posterTime={startAt} resetTime={startAt} aria-label="Codemode as one tool inside an agent loop" className="dg-solo" pauseWhenOffscreen={false}>
-      <Flow.Stage width={W} height={H}>
-        <Boxes />
-        <Flow.Token track={thinkTrack}><div className="llm-ring" /></Flow.Token>
-        {tracks.map((tk) => (
-          <Flow.Token key={tk.id} track={tk}>
-            {tk.id === "at-cm-task" ? (
-              <div className="chip code">task</div>
-            ) : tk.id === "at-cm-result" ? (
-              <div className="chip result">result</div>
-            ) : (
-              <div className="dot" />
-            )}
-          </Flow.Token>
-        ))}
-        {msgs.map((tk) => (
-          <Flow.Token key={tk.id} track={tk}><div className="msg" /></Flow.Token>
-        ))}
-      </Flow.Stage>
-    </Flow.Root>
-    <div className="dg-legend" style={{ marginTop: 14 }}>
-      <span><i style={{ background: "var(--accent-3)" }} />tool call</span>
-      <span><i style={{ background: "var(--accent-2)" }} />tool result</span>
-      <span><i style={{ background: "var(--accent)" }} />LLM output</span>
+/** Pauses the loop once it reaches `endAt` (or wraps around). */
+const StopAt = ({ startAt, endAt, onStop }: { startAt: number; endAt: number; onStop: () => void }) => {
+  useFlowFrame((t) => {
+    if (t >= endAt || t < startAt - 50) onStop();
+  });
+  return null;
+};
+
+export const AgentTool = ({
+  startAt = 0,
+  endAt,
+}: {
+  /** Loop time to start from. */
+  startAt?: number;
+  /** If set, play only [startAt, endAt] and then freeze. */
+  endAt?: number;
+}) => {
+  const [stopped, setStopped] = useState(false);
+  return (
+    <div>
+      <Flow.Root
+        duration={DURATION}
+        posterTime={startAt}
+        resetTime={startAt}
+        paused={stopped}
+        controls={endAt === undefined}
+        aria-label="Codemode as one tool inside an agent loop"
+        className="dg-solo"
+        pauseWhenOffscreen={false}
+      >
+        <Flow.Stage width={W} height={H}>
+          {endAt !== undefined ? <StopAt startAt={startAt} endAt={endAt} onStop={() => setStopped(true)} /> : null}
+          <Boxes />
+          <Flow.Token track={thinkTrack}><div className="llm-ring" /></Flow.Token>
+          {tracks.map((tk) => (
+            <Flow.Token key={tk.id} track={tk}>
+              {tk.id === "at-cm-task" ? (
+                <div className="chip code">task</div>
+              ) : tk.id === "at-cm-result" ? (
+                <div className="chip result">result</div>
+              ) : (
+                <div className="dot" />
+              )}
+            </Flow.Token>
+          ))}
+          {msgs.map((tk) => (
+            <Flow.Token key={tk.id} track={tk}><div className="msg" /></Flow.Token>
+          ))}
+        </Flow.Stage>
+      </Flow.Root>
+      <div className="dg-legend" style={{ marginTop: 14 }}>
+        <span><i style={{ background: "var(--accent-3)" }} />tool call</span>
+        <span><i style={{ background: "var(--accent-2)" }} />tool result</span>
+        <span><i style={{ background: "var(--accent)" }} />LLM output</span>
+      </div>
     </div>
-  </div>
-);
+  );
+};

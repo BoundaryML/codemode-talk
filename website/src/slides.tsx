@@ -258,6 +258,8 @@ const AgentToolSlide = () => {
   const showCode = step >= 6;
   const shown = LOG.filter((m) => m.at <= step);
   const startAt = showCode ? 0 : (LOG.find((m) => m.at === step)?.t ?? 0);
+  // play just this message's segment, then freeze until the next press
+  const endAt = showCode ? undefined : (LOG.find((m) => m.at === step + 1)?.t ?? AGENT_TOOL_TIMES.end);
   return (
     <Slide kicker="Let's build codemode, step by step">
       <h2>Make it a tool. Give it to an agent.</h2>
@@ -295,7 +297,7 @@ for (let step = 0; step < MAX_STEPS; step++) {
           )}
         </div>
         <div className="col">
-          <AgentTool key={startAt} startAt={startAt} />
+          <AgentTool key={`${step}`} startAt={startAt} endAt={endAt} />
         </div>
       </div>
     </Slide>
