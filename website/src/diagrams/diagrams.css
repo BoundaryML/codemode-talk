@@ -154,3 +154,6 @@
 .cb-arrow { color: var(--fg-tertiary); font-size: 22px; }
 .cb-stage { animation: cb-in 400ms ease both; }
 @keyframes cb-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.dg-svg .box.inner { stroke: var(--fg-border); transition: stroke 150ms ease, fill 150ms ease; }
+.dg-svg .box.inner[data-on="true"] { stroke: var(--accent); fill: rgba(108,92,231,0.1); }
+[data-flow-state="code"] .dot { background: var(--accent); }

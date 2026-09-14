@@ -6,6 +6,7 @@ import { ContextBloat } from "./diagrams/ContextBloat";
 import { WorkflowBuild } from "./diagrams/WorkflowBuild";
 import { TokenBars } from "./diagrams/TokenBars";
 import { AgentLoop } from "./diagrams/AgentLoop";
+import { AgentTool } from "./diagrams/AgentTool";
 
 const Steps = ({
   items,
@@ -498,7 +499,7 @@ return result; // 🤑
       <Slide kicker="Making the LLM generate code, efficiently">
         <div className="row grow">
           <div className="col" style={{ flex: "0 0 560px" }}>
-            <h2>Wait. This is a whole agent now.</h2>
+            <h2>Wait. This is a whole workflow now.</h2>
             <p>
               The LLM has to pick a query, read search results, pick tools, read
               their types, <em>then</em> write the script.
@@ -531,7 +532,7 @@ return result; // 🤑
     steps: 4,
     render: () => (
       <Slide kicker="Let's build codemode, step by step">
-        <h2>The whole loop, in code</h2>
+        <h2>The codemode flow</h2>
         <CodeSteps
           dense
           revealAt={[0, 1, 2, 3, 4]}
@@ -577,6 +578,35 @@ return result;
             },
           ]}
         />
+      </Slide>
+    ),
+  },
+
+  // Wrap it as a tool inside an agent
+  {
+    render: () => (
+      <Slide kicker="Let's build codemode, step by step">
+        <h2>Make it a tool. Give it to an agent.</h2>
+        <div className="row grow">
+          <div className="col" style={{ flex: "0 0 640px" }}>
+            <Code title="agent.ts" small>{`
+const tools = { web_search, read_file, codemode };
+
+for (let step = 0; step < MAX_STEPS; step++) {
+  const turn = await llm(messages, tools);
+  if (!turn.toolCall) return turn.text;
+  messages.push(await run(turn.toolCall));
+}
+`}</Code>
+            <p className="small muted" style={{ marginTop: 10 }}>
+              codemode(task) is just another tool. The search → describe → write → check → run
+              pipeline is folded inside it.
+            </p>
+          </div>
+          <div className="col">
+            <AgentTool />
+          </div>
+        </div>
       </Slide>
     ),
   },
@@ -764,17 +794,26 @@ email.send          { to: "cto@…" }            ⏸ approval?
         <h2>The same loop, in BAML</h2>
         <div className="row grow">
           <div className="col">
-            <Code title="baml_src/codemode.baml" small>{`
-function main(task: string) -> string {
-  let queries = PlanSearch(task);            // LLM
-  let names   = queries.flat_map(search_tools);
-  let spec    = describe_tools(names);
-  let script  = WriteScript(task, spec);     // LLM
-  run_script(script.code)                    // node
+            <Code title="baml_src/agent.baml" small>{`
+function agent(task: string) -> string {
+  let tools = [WebSearch, ReadFile, Codemode];
+  let messages = [user(task)];
+  let step = 0;
+  while (step < 5) {
+    match (Agent(messages, tools)) {
+      Answer { text: let t } => { return t; },
+      ToolCall { name: "codemode", args: let a } =>
+        messages.push(codemode(a.task)),
+      ToolCall { name: let n, args: let a } =>
+        messages.push(run(n, a)),
+    }
+    step += 1;
+  }
+  "gave up after 5 steps"
 }
 `}</Code>
             <Code small>{`
-$ baml run main -- --task "File a Linear ticket
+$ baml run agent -- --task "File a Linear ticket
     for each p0 bug in boundaryml/baml, then tell Slack"
 `}</Code>
           </div>
