@@ -203,6 +203,13 @@ const Root = ({
     for (const fn of subscribersRef.current) fn(timeRef.current);
   }, []);
 
+  // Deck integration: any `flow:reset` event on window rewinds this loop.
+  // The deck fires one on every slide/step change so animations restart.
+  useEffect(() => {
+    window.addEventListener("flow:reset", reset);
+    return () => window.removeEventListener("flow:reset", reset);
+  }, [reset]);
+
   // Loop-position progress for the controls row: an internal subscriber writes
   // `--flow-progress` (0..1) on the frame element — same no-render hot path as
   // tokens; the fill is a pure CSS scaleX of that property.

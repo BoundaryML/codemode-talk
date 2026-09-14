@@ -76,10 +76,13 @@ export const Deck = ({ slides }: { slides: SlideDef[] }) => {
     return () => window.removeEventListener("resize", fit);
   }, []);
 
-  // Sync hash <-> state.
+  // Sync hash <-> state, and restart every Flow animation on any navigation.
   useEffect(() => {
     const h = `#/${state.index + 1}${state.step ? `.${state.step}` : ""}`;
     if (window.location.hash !== h) history.replaceState(null, "", h);
+    // After paint, so newly mounted Flow roots have subscribed.
+    const id = requestAnimationFrame(() => window.dispatchEvent(new Event("flow:reset")));
+    return () => cancelAnimationFrame(id);
   }, [state]);
   useEffect(() => {
     const onHash = () => setState(readHash(slides.length));
