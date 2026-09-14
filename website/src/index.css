@@ -293,3 +293,24 @@ code, pre, kbd { font-family: var(--font-mono); }
 .cs-code[data-open="true"] { grid-template-rows: 1fr; }
 .cs-item[data-state="on"] .code { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
 .cs .code { padding: 14px 20px; font-size: 18px; }
+
+/* ── Steps grow (one list, added steps nest under the originals) ── */
+.sg2 { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 22px; }
+.sg2-head { display: flex; align-items: center; gap: 20px; font-size: 34px; font-weight: 650; letter-spacing: -0.01em; color: var(--fg); }
+.sg2-num {
+  width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--accent); color: #fff; font-family: var(--font-mono); font-size: 20px; font-weight: 600;
+}
+.sg2-kids { list-style: none; margin: 0; padding: 0 0 0 68px; display: flex; flex-direction: column; }
+.sg2-kid { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 380ms cubic-bezier(.2,.7,.2,1); }
+.sg2-kid > div { overflow: hidden; }
+.sg2-kid[data-open="true"] { grid-template-rows: 1fr; }
+.sg2-kidin {
+  display: inline-flex; align-items: center; gap: 14px; margin-top: 10px;
+  font-size: 24px; color: var(--accent);
+  padding: 6px 14px 6px 8px; border-radius: 10px; border: 1px dashed var(--accent);
+  background: rgba(108,92,231,0.06);
+  opacity: 0; transform: translateX(-12px); transition: opacity 300ms ease 120ms, transform 300ms ease 120ms, background 300ms ease;
+}
+.sg2-kid[data-open="true"] .sg2-kidin { opacity: 1; transform: none; }
+.sg2-kid[data-new="true"] .sg2-kidin { background: rgba(108,92,231,0.14); }

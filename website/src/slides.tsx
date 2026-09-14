@@ -162,51 +162,41 @@ const CodeSteps = ({
   );
 };
 
-const GROWN: { text: React.ReactNode; orig?: boolean; at: number }[] = [
-  { text: "Search for the tools you need", at: 1 },
-  { text: "Describe them (get the types)", at: 2 },
-  { text: <>Make an LLM generate code</>, orig: true, at: 0 },
-  { text: "Type-check / lint the string it gave you", at: 3 },
-  { text: "Put the APIs in scope, in a sandbox", at: 4 },
-  { text: "Gate the dangerous calls behind approval", at: 5 },
-  { text: <>Run it</>, orig: true, at: 0 },
-  { text: "Log calls, generate an audit trail", at: 6 },
-  { text: <>Save $$$$</>, orig: true, at: 0 },
+const GROWN: { text: string; kids: { text: string; at: number }[] }[] = [
+  { text: "Make an LLM generate code", kids: [
+    { text: "search() for the tools you need", at: 1 },
+    { text: "describe() them to get the types", at: 2 },
+    { text: "type-check / lint the string it gave you", at: 3 },
+  ]},
+  { text: "Run it", kids: [
+    { text: "put the APIs in scope, in a sandbox", at: 4 },
+    { text: "gate the dangerous calls behind approval", at: 5 },
+    { text: "log calls, generate an audit trail", at: 6 },
+  ]},
+  { text: "Save $$$$", kids: [] },
 ];
 
 const StepsGrow = () => {
   const step = useStep();
-  const shown = GROWN.filter((g) => step >= g.at);
   return (
     <Slide kicker="Let's build codemode, step by step">
       <h2>Remember when this was three steps?</h2>
-      <div className="row grow">
-        <div className="col" style={{ flex: "0 0 480px" }}>
-          <div className="code-title">what we said</div>
-          <ol className="sg" data-struck={step >= 7}>
-            <li>Make an LLM generate code</li>
-            <li>Run it</li>
-            <li>Save $$$$</li>
-          </ol>
-          <Frag at={7} style={{ marginTop: 18 }}>
-            <p>
-              Codemode isn't a trick. It's an <strong>agent architecture</strong>. Every
-              step you skip comes back as a bug.
-            </p>
-          </Frag>
-        </div>
-        <div className="col">
-          <div className="code-title">what it actually takes</div>
-          <ol className="sg grown">
-            {shown.map((g, i) => (
-              <li key={String(g.text) + i} className={g.orig ? "orig" : "added"} data-new={!g.orig && g.at === step}>
-                <span>{g.text}</span>
-                {!g.orig ? <span className="tag violet">added</span> : null}
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
+      <ol className="sg2">
+        {GROWN.map((g, i) => (
+          <li key={i} className="sg2-item">
+            <div className="sg2-head"><span className="sg2-num">{i + 1}</span>{g.text}</div>
+            {g.kids.length ? (
+              <ul className="sg2-kids">
+                {g.kids.map((k) => (
+                  <li key={k.text} className="sg2-kid" data-open={step >= k.at} data-new={step === k.at}>
+                    <div><span className="sg2-kidin"><span className="tag violet">added</span>{k.text}</span></div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </li>
+        ))}
+      </ol>
     </Slide>
   );
 };
@@ -529,7 +519,7 @@ return result; // 🤑
 
   // Callback: remember when it was three steps?
   {
-    steps: 7,
+    steps: 6,
     render: () => <StepsGrow />,
   },
 
