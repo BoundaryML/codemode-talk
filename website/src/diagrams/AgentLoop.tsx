@@ -17,9 +17,9 @@ const TOOLS = [
   { x: 210, y: 160, name: "run()", w: 70 },
 ];
 const SUB = [
-  { x: 292, y: 136, name: "A" },
-  { x: 292, y: 160, name: "B" },
-  { x: 292, y: 184, name: "C" },
+  { x: 288, y: 136, name: "toolA()" },
+  { x: 288, y: 160, name: "toolB()" },
+  { x: 288, y: 184, name: "toolC()" },
 ];
 const CTX = { x: 22, y: 200, gap: 13 };
 
@@ -93,7 +93,7 @@ SUB.forEach((s, i) => {
   tracks.push(
     defineTrack(`al-sub-${i}-back`, [
       { t: t0 + 250, ...s, opacity: 0, state: "result" },
-      { t: t0 + 300, x: s.x - 10, y: s.y, opacity: 1, ease: "out" },
+      { t: t0 + 300, x: s.x - 20, y: s.y, opacity: 1, ease: "out" },
       { t: t0 + 380, ...TOOLS[2], ease: "inOut" },
       { t: t0 + 400, ...TOOLS[2], opacity: 0 },
     ]),
@@ -121,7 +121,7 @@ const Boxes = () => (
       <path key={tl.name} className="wire" d={`M ${LLM.x + 40} ${LLM.y} L ${tl.x - tl.w / 2} ${tl.y}`} />
     ))}
     {SUB.map((s) => (
-      <path key={s.name} className="wire" d={`M ${TOOLS[2].x + 35} ${TOOLS[2].y} L ${s.x - 12} ${s.y}`} />
+      <path key={s.name} className="wire" d={`M ${TOOLS[2].x + 35} ${TOOLS[2].y} L ${s.x - 22} ${s.y}`} />
     ))}
     <rect className="box" x={LLM.x - 40} y={LLM.y - 30} width={80} height={60} rx={6} />
     <text className="title" x={LLM.x} y={LLM.y + 3} textAnchor="middle">LLM</text>
@@ -133,8 +133,8 @@ const Boxes = () => (
     ))}
     {SUB.map((s) => (
       <g key={s.name}>
-        <rect className="box muted" x={s.x - 12} y={s.y - 8} width={24} height={16} rx={3} />
-        <text x={s.x} y={s.y + 2.5} textAnchor="middle" style={{ fontSize: 6 }}>{s.name}</text>
+        <rect className="box muted" x={s.x - 22} y={s.y - 8} width={44} height={16} rx={3} />
+        <text x={s.x} y={s.y + 2.5} textAnchor="middle" style={{ fontSize: 5.5 }}>{s.name}</text>
       </g>
     ))}
     <text className="label" x={CTX.x - 6} y={CTX.y - 12}>context window</text>

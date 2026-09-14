@@ -132,7 +132,9 @@ export const ContextBloat = ({ mode }: { mode: "dump" | "search" }) => (
     <div key={mode} className="cb-stage">
       <Flow.Root
         duration={DURATION}
-        posterTime={4800}
+        posterTime={mode === "dump" ? 5600 : 4800}
+        paused={mode === "dump"}
+        controls={mode !== "dump"}
         aria-label={mode === "dump" ? "Dumping every API doc into the prompt" : "Search and describe pull in only what is needed"}
         className="dg-solo"
         pauseWhenOffscreen={false}
