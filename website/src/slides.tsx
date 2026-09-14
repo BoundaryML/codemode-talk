@@ -813,8 +813,7 @@ function agent(task: string) -> string {
 }
 `}</Code>
             <Code small>{`
-$ baml run agent -- --task "File a Linear ticket
-    for each p0 bug in boundaryml/baml, then tell Slack"
+$ baml run agent -- --task "File Linear tickets for our p0 bugs"
 `}</Code>
           </div>
           <div className="col">
