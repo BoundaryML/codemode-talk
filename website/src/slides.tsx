@@ -5,6 +5,7 @@ import { RoundTripsCompare } from "./diagrams/RoundTrips";
 import { ContextBloat } from "./diagrams/ContextBloat";
 import { TokenBars } from "./diagrams/TokenBars";
 import { Orchestrated, AGENT_TIMES } from "./diagrams/Orchestrated";
+import { Production } from "./diagrams/Production";
 
 const CodemodeSlide = () => {
   const step = useStep();
@@ -619,6 +620,23 @@ return result;
     render: () => (
       <Slide className="center">
         <h1>Live demo</h1>
+      </Slide>
+    ),
+  },
+
+  // After the demo: production shapes
+  {
+    render: () => (
+      <Slide kicker="Productionizing it">
+        <h2>There are many ways to build this</h2>
+        <Production />
+        <div className="dg-legend" style={{ justifyContent: "center", flexWrap: "wrap", gap: 18 }}>
+          <span className="tag blue">static tools</span>
+          <span className="tag blue">dynamic tools the agent wrote</span>
+          <span className="tag blue">state on disk</span>
+          <span className="tag violet">codemode as a subagent · compiler diagnostics · retries</span>
+          <span className="tag good">human approval gates</span>
+        </div>
       </Slide>
     ),
   },

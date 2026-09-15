@@ -162,3 +162,8 @@
 .llm-ring.sm { width: calc(var(--flow-u) * 84); height: calc(var(--flow-u) * 32); }
 .msg.sm { width: calc(var(--flow-u) * 8); height: calc(var(--flow-u) * 8); }
 .dg-wide { width: 690px; max-width: 100%; align-self: center; }
+.dg-xwide { width: 1000px; max-width: 100%; align-self: center; }
+.dg-svg .box.inner[data-state="fail"] { stroke: var(--accent-1); fill: rgba(255,107,107,0.12); }
+.dg-svg .box.inner[data-state="ok"] { stroke: var(--accent-2); fill: rgba(0,184,148,0.12); }
+.dg-svg .box.inner[data-state="ask"] { stroke: var(--accent-3); fill: rgba(253,203,110,0.25); }
+[data-flow-state="fail"] .dot { background: var(--accent-1); }
