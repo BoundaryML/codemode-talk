@@ -161,3 +161,4 @@
 [data-flow-state="user"] .msg { background: var(--fg-secondary); }
 .llm-ring.sm { width: calc(var(--flow-u) * 84); height: calc(var(--flow-u) * 32); }
 .msg.sm { width: calc(var(--flow-u) * 8); height: calc(var(--flow-u) * 8); }
+.dg-wide { width: 690px; max-width: 100%; align-self: center; }

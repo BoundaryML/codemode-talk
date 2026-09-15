@@ -274,10 +274,13 @@ export const Orchestrated = ({
   mode,
   startAt = 0,
   endAt,
+  wide = false,
 }: {
   mode: "agent" | "workflow";
   startAt?: number;
   endAt?: number;
+  /** Fill the slide width instead of the half-column default. */
+  wide?: boolean;
 }) => {
   const b = mode === "agent" ? AGENT : WORKFLOW;
   const [stopped, setStopped] = useState(false);
@@ -290,7 +293,7 @@ export const Orchestrated = ({
         paused={stopped}
         controls={endAt === undefined}
         aria-label={mode === "agent" ? "Codemode as one tool inside an agent loop" : "The codemode workflow"}
-        className="dg-solo"
+        className={wide ? "dg-wide" : "dg-solo"}
         pauseWhenOffscreen={false}
       >
         <Flow.Stage width={W} height={H}>

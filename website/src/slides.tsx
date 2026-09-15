@@ -530,35 +530,10 @@ return result; // 🤑
 
   // The agent loop, as it really is now
   {
-    steps: 2,
     render: () => (
       <Slide kicker="Making the LLM generate code, efficiently">
-        <div className="row grow">
-          <div className="col" style={{ flex: "0 0 560px" }}>
-            <h2>Wait. This is a whole workflow now.</h2>
-            <div className="log" style={{ marginBottom: 6 }}>
-              <div className="log-msg" data-role="user">
-                <span className="log-role">user</span>
-                <span className="log-text">Make a workflow that files a Linear ticket for each p0 bug in boundaryml/baml, then tells #eng.</span>
-              </div>
-            </div>
-            <p>
-              To even <em>write</em> the script, the LLM has to pick a query, read the
-              search results, pick tools, and read their types.
-            </p>
-            <Frag at={1}>
-              <p>Every one of those is a round trip. The context still grows, just slowly.</p>
-            </Frag>
-            <Frag at={2}>
-              <div className="card accent">
-                <p>Only the last hop is codemode. The rest is plain old tool calling that gets you there.</p>
-              </div>
-            </Frag>
-          </div>
-          <div className="col">
-            <Orchestrated mode="workflow" />
-          </div>
-        </div>
+        <h2>Wait. This is a whole workflow now.</h2>
+        <Orchestrated mode="workflow" wide />
       </Slide>
     ),
   },
