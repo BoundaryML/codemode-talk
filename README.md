@@ -22,9 +22,13 @@ Slides are addressable by hash (`#/12`, `#/12.2` for step 2).
 ## BAML demo
 
 ```sh
+# from repo root
+git submodule update --init --recursive
 cd baml
 baml toolchain use nightly                 # or prefix commands with BAML_VERSION=nightly
+baml agent install
+baml check
 baml test                                  # offline: sandbox + approval-gate tests
 ANTHROPIC_API_KEY=... baml run main        # the full loop with a default task
-ANTHROPIC_API_KEY=... baml run main -- --task "Email avery the open invoices for cus_42" --approve-all
+ANTHROPIC_API_KEY=... baml run main -- --task "Email avery the open invoices for cus_42" --approve_all true
 ```

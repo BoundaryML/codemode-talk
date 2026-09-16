@@ -1,6 +1,6 @@
 // Codemode in ~60 lines: search → describe → write a script → run it in a sandbox.
 
-client Coder = anthropic.AnthropicClient.new(
+client Coder = anthropic.Client.new(
   model = "claude-sonnet-5",
   api_key = env.ANTHROPIC_API_KEY,
   max_tokens = 4096,
