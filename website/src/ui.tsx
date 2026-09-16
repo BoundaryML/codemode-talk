@@ -16,7 +16,6 @@ export const Slide = ({
     {children}
     <div className="footer">
       <span>Codemode · Boundary</span>
-      <span>@ Foundations</span>
     </div>
   </section>
 );

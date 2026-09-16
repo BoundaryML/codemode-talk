@@ -360,3 +360,43 @@ sup { font-size: 0.6em; color: var(--accent); }
 .log-msg[data-role="tool_result"] { --c: var(--accent-2); }
 .log-msg[data-role="assistant"]   { --c: var(--accent); }
 @keyframes log-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── TypeScript vs BAML comparison ─────────────────────────────────── */
+.vs-tabs { display: flex; gap: 12px; }
+.vs-tab {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 20px; font-weight: 600; color: var(--fg-tertiary);
+  padding: 6px 16px 6px 6px; border-radius: 12px; border: 1px solid transparent;
+  transition: color 300ms ease, border-color 300ms ease, background 300ms ease;
+}
+.vs-tab[data-done="true"] { color: var(--fg-secondary); }
+.vs-tab[data-on="true"] { color: var(--fg); border-color: var(--accent); background: rgba(108,92,231,0.06); }
+.vs-num {
+  width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 600;
+  border: 1px solid var(--fg-border); color: var(--fg-tertiary); background: var(--bg);
+}
+.vs-tab[data-on="true"] .vs-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.vs-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start;
+  flex: 1; min-height: 0;
+  animation: log-in 320ms ease both;
+}
+.vs-col { min-width: 0; }
+.slide .vs-bullets { margin-top: 14px; padding-left: 1.1em; gap: 6px; }
+.slide .vs-bullets li { font-size: 18px; line-height: 1.35; color: var(--fg-secondary); }
+.vs-grid .code { font-size: 15.5px; line-height: 1.42; padding: 12px 18px; }
+.vs-col:last-child .code { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
+
+/* ── Programmatic tool calling slide ───────────────────────────────── */
+.ptc-grid { display: grid; grid-template-columns: 640px 1fr; gap: 36px; align-items: start; flex: 1; min-height: 0; }
+.ptc-diagram { min-width: 0; }
+.ptc-panel { min-width: 0; animation: log-in 320ms ease both; }
+.ptc-panel .code { font-size: 15.5px; line-height: 1.42; padding: 12px 18px; }
+.slide .ptc-foot { font-size: 24px; color: var(--fg); }
+.slide .own-list { text-align: left; gap: 18px; max-width: 1100px; }
+.slide .own-list li { font-size: 32px; }
+
+/* ── "incredibly dynamic / amazing / terrifying" ────────────────────── */
+.dyn-word { display: inline-block; animation: log-in 320ms ease both; }
+.dyn-word[data-word="terrifying"] { color: var(--accent-1); }

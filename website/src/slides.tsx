@@ -6,6 +6,7 @@ import { ContextBloat } from "./diagrams/ContextBloat";
 import { TokenBars } from "./diagrams/TokenBars";
 import { Orchestrated, AGENT_TIMES } from "./diagrams/Orchestrated";
 import { Production } from "./diagrams/Production";
+import { ProgrammaticToolCalling } from "./diagrams/ProgrammaticToolCalling";
 
 const CodemodeSlide = () => {
   const step = useStep();
@@ -275,21 +276,421 @@ for (let step = 0; step < MAX_STEPS; step++) {
   );
 };
 
+// ── TypeScript vs BAML: the same building blocks, side by side ──────────
+const VS: { name: string; ts: string; tsBullets?: string[]; bamlTitle?: string; baml: string }[] = [
+  {
+    name: "Define a tool",
+    ts: `
+import { z } from "zod";
+
+const Plan = z.enum(["free", "pro", "enterprise"]);
+const PlanChange = z.object({ id: z.string(), prev: Plan, plan: Plan });
+
+const updatePlan = tool({
+  description: "Change a customer's plan. Requires approval.",
+  parameters: z.object({ id: z.string(), plan: Plan }),
+  returns: PlanChange,
+  execute: async ({ id, plan }): Promise<z.infer<typeof PlanChange>> =>
+    crm.updatePlan(id, plan),
+});
+
+// approval and rollback policy: a second place
+registry.push({
+  name: "crm.updatePlan", tool: updatePlan, requiresApproval: true,
+  revert: (args, r) => setPlan(args.id, r.prev),
+});
+
+// the schema is the source of truth. The function's types derive from it.
+`,
+    baml: `
+class Crm {
+  /// Change a customer's plan. Requires user approval. Reversible.
+  function update_plan(self, id: string, plan: string)
+    -> PlanChange throws PausedForApproval | ConnectorError {
+    call<PlanChange>(
+      self.ctx, self.update_plan, j({ "id": id, "plan": plan }),
+      () -> { … },
+    )
+  }
+
+  implements Connector {
+    function tools(self) -> Tool[] {
+      [tool(self.update_plan, approval = true,
+            revert = (args, result) -> { … })]
+    }
+  }
+}
+
+// output of describe("crm.update_plan"):
+//   /// Change a customer's plan. Requires user approval. Reversible.
+//   function update_plan(id: string, plan: string) -> PlanChange
+//   class PlanChange { id: string, previous_plan: string, plan: string }
+`,
+  },
+  {
+    name: "describe()",
+    ts: `
+import { zodToTs, printNode, createTypeAlias } from "zod-to-ts";
+
+const params = printNode(zodToTs(updatePlan.parameters).node);
+const returns = printNode(zodToTs(updatePlan.returns).node);
+
+const decl = \`/** \${updatePlan.description} */
+declare function updatePlan(args: \${params}): Promise<\${returns}>;\`;
+// -> declare function updatePlan(args: { id: string; plan: "free" | … })
+//      : Promise<{ id: string; prev: "free" | …; plan: "free" | … }>;
+
+// nested schemas print inline. To show the model a named type,
+// register an alias for each one by hand:
+const planChangeAlias = printNode(
+  createTypeAlias(zodToTs(PlanChange, "PlanChange").node, "PlanChange"),
+);
+`,
+    baml: `
+// describe("crm"): reflection, straight into the prompt
+let out: string[] = [];
+
+for (let t in c.tools()) {
+  out.push(t.sig.to_string());           // reflect.signature(self.update_plan)
+}
+for (let cls in result_classes(c.tools())) {
+  out.push(cls.to_string());             // reflect.Type
+}
+
+out.join("\\n")
+// -> /// Change a customer's plan. Requires user approval. Reversible.
+//    function update_plan(id: string, plan: string) -> PlanChange
+//    class PlanChange { id: string, previous_plan: string, plan: string }
+`,
+  },
+  {
+    name: "Check + run",
+    ts: `
+// 1. type-check the string against the picked .d.ts
+const program = ts.createProgram(
+  ["run.ts", "spec.d.ts"], opts, inMemoryHost,
+);
+const errors = ts.getPreEmitDiagnostics(program);
+if (errors.length) {
+  const text = errors.map((d) =>
+    ts.flattenDiagnosticMessageText(d.messageText, "\\n")).join("\\n");
+  code = await llm(\`Fix these errors:\\n\${text}\`, code);   // then loop
+}
+
+// 2. run it in an isolate
+const isolate = new ivm.Isolate({ memoryLimit: 128 });
+const ctx = await isolate.createContext();
+// 3. every tool becomes an RPC bridge; args and results are JSON
+await ctx.global.set("crm", new ivm.Reference(crmRpc));
+const result = await ctx.eval(ts.transpile(code), { timeout: 30_000 });
+`,
+    baml: `
+// compile against this package: the connectors are in scope, typed
+let pkg = reflect.Package.compile(
+  { "run.baml": source },
+  packages = { "host": reflect.Package.current() },
+) catch (e) {
+  reflect.errors.CompilationError => {
+    // diagnostics (with spans) go to an LLM function…
+    let fix = FixCode(source, render_diagnostics(e), api, reference);
+    source = fix.code;
+    // …then recompile, up to 3 times. The agent loop does not see this.
+    …
+  },
+};
+
+let run = pkg.get_function<reflect.AnyFunction>("run");
+reflect.call_any(run, { "codemode": codemode })
+`,
+  },
+  {
+    name: "Sandbox it",
+    ts: `
+const isolate = new ivm.Isolate({ memoryLimit: 128 });
+const ctx = await isolate.createContext();
+const jail = ctx.global;
+
+// the isolate is empty. Every API is injected by hand, as RPC…
+await jail.set("crm", new ivm.Reference(crmRpc));
+
+// …including a fetch restricted to an allowlist
+await jail.set("fetch", new ivm.Reference(async (url: string) => {
+  if (!ALLOWED.has(new URL(url).host)) throw new Error("blocked");
+  const res = await fetch(url);
+  return new ivm.ExternalCopy(await res.json()).copyInto();
+}));
+
+// fs, process.env, child_process: not injected, so unavailable.
+const result = await ctx.eval(js, { timeout: 30_000 });
+`,
+    tsBullets: [
+      "A bug in V8 is a bug in your server. Chrome wraps every isolate in a separate OS-sandboxed process. Node does not.",
+      "Every injected Reference is a door back into the host. Pass the wrong object and the code can reach everything behind it.",
+      "Limits cover memory and wall time only. A tight loop or a hung host callback still stalls your process.",
+    ],
+    bamlTitle: "baml · proposed in BEP 63, not shipped yet",
+    baml: `
+// a sandbox is a package plus a policy
+let sb = reflect.Sandbox.new(
+  packages = { "host": reflect.Package.current() },
+  deny = ["baml.fs", "baml.sys", "baml.env"],
+  timeout = baml.time.Duration.from_seconds(30),
+);
+
+// the rest of the stdlib stays. Override specific functions:
+sb.override(baml.http.fetch, (url, opts) -> {
+  if (!ALLOWED.includes(baml.http.Url.parse(url).host)) {
+    throw err(\`fetch to \${url} is not allowed\`);
+  }
+  baml.http.fetch(url, opts)
+});
+
+// same compile, same typed connectors, same run()
+let result = sb.run(source, "run", { "codemode": codemode });
+`,
+  },
+  {
+    name: "Pause + resume",
+    ts: `
+// a Proxy in front of every tool: replay, execute, or pause
+const crm = new Proxy(crmImpl, {
+  get: (impl, method) => async (...args) => {
+    const seq = cursor++;
+    const seen = log[seq];
+    if (seen) return seen.result;                // replay from log
+    if (NEEDS_APPROVAL.has(method)) {
+      log[seq] = { method, args, pending: true };
+      throw new Paused(seq);                     // unwind the pass
+    }
+    const result = await impl[method](...args);
+    log[seq] = { method, args, result };         // must be JSON-safe
+    return result;
+  },
+});
+
+// errors crossing the isolate arrive as plain copies:
+try { await ctx.eval(js); } catch (e) {
+  if (e.message.startsWith("Paused:")) …         // string match, not instanceof
+}
+`,
+    baml: `
+// Runtime.call<T>: assign a seq, then replay | execute | pause
+let recorded = exec.log.at(seq);
+if (recorded == null) {
+  if (t.requires_approval) { self.pause(exec, entry); }   // throws
+  return self.invoke<T>(exec, entry, run);
+}
+// same seq must see the same call: structural ==
+if (recorded.args != args) { self.diverged(exec, seq); }
+baml.json.to<T>(recorded.result)
+
+// run_pass: run on a green thread, match on the outcome
+let settled = await baml.future.all_settled([spawn { run(codemode) }]);
+match (settled[0]) {
+  let s: baml.future.Success<unknown> => Completed { result: j(s.value) },
+  let f: baml.future.Failure<unknown> => match (f.error) {
+    let p: PausedForApproval => Paused { pending: [p.pending] },
+    let d: ReplayDivergence => Failed { error: d.message },
+    let c: ConnectorError => Failed { error: c.message },
+  },
+  baml.future.Panicked => Failed { error: "the code panicked" },
+}
+`,
+  },
+];
+
+const BamlVsTs = () => {
+  const step = useStep();
+  const cur = VS[Math.min(step, VS.length - 1)];
+  return (
+    <Slide kicker="Under the hood of the demo" style={{ padding: "64px 80px", gap: 20 }}>
+      <h2>The same building blocks, in TypeScript vs BAML</h2>
+      <div className="vs-tabs">
+        {VS.map((v, i) => (
+          <span key={v.name} className="vs-tab" data-on={i === step} data-done={i < step}>
+            <span className="vs-num">{i + 1}</span>
+            {v.name}
+          </span>
+        ))}
+      </div>
+      <div className="vs-grid" key={step}>
+        <div className="vs-col">
+          <Code title="typescript · what you'd write" small>{cur.ts}</Code>
+          {cur.tsBullets ? (
+            <ul className="vs-bullets">
+              {cur.tsBullets.map((b) => <li key={b}>{b}</li>)}
+            </ul>
+          ) : null}
+        </div>
+        <div className="vs-col">
+          <Code title={cur.bamlTitle ?? "baml · from the demo's source (trimmed)"} small>{cur.baml}</Code>
+        </div>
+      </div>
+    </Slide>
+  );
+};
+
+// ── Anthropic's programmatic tool calling: diagram + the message for each hop ──
+const PTC_STEPS: { title: string; code: string }[] = [
+  {
+    title: "① request · tools with allowed_callers",
+    code: `
+await client.messages.create({
+  model: "claude-opus-5",
+  max_tokens: 4096,
+  tools: [
+    { type: "code_execution_20260120", name: "code_execution" },
+    {
+      name: "query_database",
+      description: "Run SQL. Returns rows as JSON.",
+      input_schema: { type: "object", properties: { sql: { type: "string" } } },
+      allowed_callers: ["code_execution_20260120"],   // callable from code
+    },
+  ],
+  messages: [{ role: "user", content: "Which region had the most revenue?" }],
+});
+`,
+  },
+  {
+    title: "②③ response · the container paused on a tool call",
+    code: `
+{
+  "stop_reason": "tool_use",
+  "container": { "id": "container_xyz", "expires_at": "…" },
+  "content": [
+    { "type": "server_tool_use", "id": "srvtoolu_abc", "name": "code_execution",
+      "input": { "code": "rows = json.loads(await query_database({…}))\\n…" } },
+    { "type": "tool_use", "id": "toolu_def", "name": "query_database",
+      "input": { "sql": "SELECT region, SUM(revenue) …" },
+      "caller": { "type": "code_execution_20260120", "tool_id": "srvtoolu_abc" } }
+  ]
+}
+`,
+  },
+  {
+    title: "④ your reply · tool_result blocks, nothing else",
+    code: `
+await client.messages.create({
+  model: "claude-opus-5",
+  max_tokens: 4096,
+  tools,                               // same tools array
+  container: "container_xyz",          // required while a call is pending
+  messages: [
+    ...history,
+    {
+      role: "user",
+      content: [                       // only tool_result blocks allowed here
+        { type: "tool_result", tool_use_id: "toolu_def",
+          content: JSON.stringify(rows) },
+      ],
+    },
+  ],
+});
+`,
+  },
+  {
+    title: "⑤⑥ response · stdout reaches Claude, Claude answers",
+    code: `
+{
+  "stop_reason": "end_turn",
+  "content": [
+    { "type": "code_execution_tool_result", "tool_use_id": "srvtoolu_abc",
+      "content": { "type": "code_execution_result",
+                   "stdout": "[{'region': 'West', 'revenue': 45000}, …]",
+                   "return_code": 0 } },
+    { "type": "text", "text": "West had the highest revenue at $45,000." }
+  ]
+}
+// the rows never entered Claude's context. Only stdout did.
+`,
+  },
+];
+
+const ProvidersSlide = () => {
+  const step = useStep();
+  const cur = PTC_STEPS[Math.min(step, PTC_STEPS.length - 1)];
+  return (
+    <Slide kicker="Model providers' solution" style={{ padding: "64px 80px", gap: 20 }}>
+      <h2>Anthropic's programmatic tool calling</h2>
+      <div className="ptc-grid">
+        <div className="ptc-diagram">
+          <ProgrammaticToolCalling step={step} />
+        </div>
+        <div className="ptc-panel" key={step}>
+          <Code title={cur.title} small>{cur.code}</Code>
+        </div>
+      </div>
+      <p className="ptc-foot">
+        Your server answers tool calls. The loop, the sandbox and the script live at Anthropic.
+      </p>
+    </Slide>
+  );
+};
+
+const OwnTheLoopSlide = () => {
+  const step = useStep();
+  return (
+    <Slide className="center">
+      <h1>Why you should own the loop</h1>
+      <div className="frag" data-hidden={step < 1} style={{ marginTop: 24 }}>
+        <ul className="own-list">
+          <li>Open-source models: no provider runs the container for you.</li>
+          <li>Switching providers: each one has its own loop and its own block types.</li>
+          <li>The sandbox policy, the approvals and the log are product decisions. Keep them in your code.</li>
+        </ul>
+      </div>
+    </Slide>
+  );
+};
+
+const BamlSlide = () => {
+  const step = useStep();
+  return (
+    <Slide className="center">
+      <h1>BAML: a language for AI</h1>
+      <div className="frag" data-hidden={step < 1} style={{ marginTop: 24 }}>
+        <ul className="own-list">
+          <li>A language like Rust, but compiles faster than Go</li>
+          <li>AI primitives</li>
+          <li>Everything is profiled by default</li>
+          <li>Build self-improving software</li>
+        </ul>
+      </div>
+    </Slide>
+  );
+};
+
+const DYNAMIC_WORDS = ["dynamic", "terrifying"];
+const DynamicSlide = () => {
+  const step = useStep();
+  const word = DYNAMIC_WORDS[Math.min(step, DYNAMIC_WORDS.length - 1)];
+  return (
+    <Slide className="center">
+      <h1>
+        Codemode makes your software incredibly{" "}
+        <em key={word} className="dyn-word" data-word={word}>{word}</em>
+      </h1>
+      <div className="frag" data-hidden={step < 1} style={{ marginTop: 20 }}>
+        <img className="img plain" src="/img/terrified-cat.png" alt="A cat with a pursed, worried face" style={{ maxHeight: 460 }} />
+      </div>
+    </Slide>
+  );
+};
+
 export const slides: SlideDef[] = [
   // 1 ── Title
   {
     render: () => (
       <Slide className="center">
-        <div className="kicker">Foundations · Talk 2</div>
         <h1>
           Codemode
           <br />
-          <span style={{ color: "var(--accent)" }}>the only tool your agent needs</span>
+          <span style={{ color: "var(--accent)" }}>the one tool to rule them all</span>
         </h1>
         <p className="lead" style={{ marginTop: 24 }}>
           Avery Townsend &amp; Aaron Villalpando
         </p>
-        <p className="muted">Boundary · creators of BAML</p>
+        <p className="muted">Boundary</p>
       </Slide>
     ),
   },
@@ -340,16 +741,11 @@ export const slides: SlideDef[] = [
 
   // 4 ── Expensive: the context is re-sent and grows every turn
   {
-    steps: 4,
+    steps: 3,
     render: () => (
       <Slide kicker="The problem with tool calling (and MCP)">
         <h2>This gets expensive.</h2>
         <TokenBars variant="turns" />
-        <Frag at={4}>
-          <p className="lead" style={{ marginTop: 6 }}>
-            Imagine reporting <em>every keystroke</em> to your manager, and waiting for approval before the next one.
-          </p>
-        </Frag>
       </Slide>
     ),
   },
@@ -391,6 +787,12 @@ export const slides: SlideDef[] = [
         </div>
       </Slide>
     ),
+  },
+
+  // Codemode makes your software incredibly dynamic / terrifying
+  {
+    steps: 1,
+    render: () => <DynamicSlide />,
   },
 
   // 7 ── Section: in the wild
@@ -545,6 +947,15 @@ return result; // 🤑
     render: () => <StepsGrow />,
   },
 
+  // Punchline
+  {
+    render: () => (
+      <Slide className="center" style={{ padding: 40 }}>
+        <img className="img plain" src="/img/i-just-wanted-a-function.png" alt="I just wanted it to call a function" style={{ maxHeight: 780 }} />
+      </Slide>
+    ),
+  },
+
   // The whole loop, concretely
   {
     steps: 4,
@@ -606,15 +1017,6 @@ return result;
     render: () => <AgentToolSlide />,
   },
 
-  // Punchline
-  {
-    render: () => (
-      <Slide className="center" style={{ padding: 40 }}>
-        <img className="img plain" src="/img/i-just-wanted-a-function.png" alt="I just wanted it to call a function" style={{ maxHeight: 780 }} />
-      </Slide>
-    ),
-  },
-
   // Live demo
   {
     render: () => (
@@ -622,6 +1024,12 @@ return result;
         <h1>Live demo</h1>
       </Slide>
     ),
+  },
+
+  // TypeScript vs BAML, one building block at a time
+  {
+    steps: 4,
+    render: () => <BamlVsTs />,
   },
 
   // After the demo: production shapes
@@ -641,15 +1049,37 @@ return result;
     ),
   },
 
+  // Model providers' solution: programmatic tool calling
+  {
+    steps: 3,
+    render: () => <ProvidersSlide />,
+  },
+
+  // Why you should own the loop
+  {
+    steps: 1,
+    render: () => <OwnTheLoopSlide />,
+  },
+
+  // BAML: a language for AI
+  {
+    steps: 1,
+    render: () => <BamlSlide />,
+  },
+
   // Thanks
   {
     render: () => (
       <Slide className="center">
-        <h1>Thanks</h1>
+        <h1>Questions?</h1>
         <p className="lead" style={{ marginTop: 24 }}>Aaron Villalpando &amp; Avery Townsend</p>
         <p className="muted" style={{ marginTop: 32, display: "flex", gap: 48, fontSize: 30 }}>
           <a href="https://boundaryml.com">boundaryml.com</a>
           <a href="https://github.com/boundaryml/baml">github.com/boundaryml/baml</a>
+          <a href="https://github.com/BoundaryML/codemode">github.com/boundaryml/codemode</a>
+        </p>
+        <p style={{ marginTop: 40, fontSize: 30 }}>
+          <span className="tag good" style={{ fontSize: 18, padding: "8px 18px" }}>we're hiring!</span>
         </p>
       </Slide>
     ),

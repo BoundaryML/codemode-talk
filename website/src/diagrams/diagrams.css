@@ -167,3 +167,17 @@
 .dg-svg .box.inner[data-state="ok"] { stroke: var(--accent-2); fill: rgba(0,184,148,0.12); }
 .dg-svg .box.inner[data-state="ask"] { stroke: var(--accent-3); fill: rgba(253,203,110,0.25); }
 [data-flow-state="fail"] .dot { background: var(--accent-1); }
+
+/* ── Programmatic tool calling (static, step-highlighted) ─────────── */
+.ptc .box.llm { stroke: var(--accent); }
+.ptc .box.you { stroke: var(--fg); stroke-width: 2; }
+.ptc .title { font-size: 11px; }
+.ptc .label { font-size: 8.5px; }
+.ptc .ptc-code text { font-size: 8px; fill: var(--fg); }
+.ptc .ptc-code .k { fill: #a626a4; }
+.ptc .ptc-code .f { fill: #4078f2; }
+.ptc .ptc-code .s { fill: #50a14f; }
+.ptc .ptc-hop path { fill: none; stroke: var(--fg-border); stroke-width: 1.5; transition: stroke 250ms ease; }
+.ptc .ptc-hop text { font-size: 8.5px; fill: var(--fg-tertiary); transition: fill 250ms ease; }
+.ptc .ptc-hop[data-on="true"] path { stroke: var(--accent); stroke-width: 2.5; }
+.ptc .ptc-hop[data-on="true"] text { fill: var(--accent); font-weight: 600; }
